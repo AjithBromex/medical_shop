@@ -189,11 +189,82 @@ class BarsChart extends StatelessWidget {
               ),
               barTouchData: BarTouchData(
                 touchTooltipData: BarTouchTooltipData(
-                  getTooltipColor: (_) => const Color(0xFF141C30).withValues(alpha: 0.95),
-                  getTooltipItem: (g, gi, rod, ri) => BarTooltipItem(
-                    '${labels[g.x]}\n${stacked ? "Total " : ""}₹${rod.toY.toStringAsFixed(2)}',
-                    const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600),
-                  ),
+                  getTooltipColor: (_) => const Color(0xFF0F172A),
+                  tooltipRoundedRadius: 8,
+                  tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  fitInsideHorizontally: true,
+                  fitInsideVertically: true,
+                  getTooltipItem: (g, gi, rod, ri) {
+                    final idx = g.x.toInt();
+                    final title = (idx >= 0 && idx < labels.length) ? labels[idx] : '';
+                    if (stacked && bars.length > 1) {
+                      var totalPaise = 0;
+                      final spans = <TextSpan>[];
+                      for (final b in bars) {
+                        if (idx >= 0 && idx < b.paise.length) {
+                          final p = b.paise[idx];
+                          totalPaise += p;
+                          if (p > 0) {
+                            spans.add(
+                              TextSpan(
+                                text: '\n${b.label}: ${inr(p)}',
+                                style: const TextStyle(
+                                  color: Color(0xFFCBD5E1),
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                      }
+                      spans.add(
+                        TextSpan(
+                          text: '\nTotal: ${inr(totalPaise)}',
+                          style: const TextStyle(
+                            color: Color(0xFF38BDF8),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      );
+                      return BarTooltipItem(
+                        title,
+                        const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        children: spans,
+                      );
+                    } else {
+                      final valPaise = stacked
+                          ? (bars.isNotEmpty && idx >= 0 && idx < bars.first.paise.length
+                              ? bars.fold<int>(0, (s, b) => s + (idx < b.paise.length ? b.paise[idx] : 0))
+                              : (rod.toY * 100).round())
+                          : (ri >= 0 && ri < bars.length && idx >= 0 && idx < bars[ri].paise.length
+                              ? bars[ri].paise[idx]
+                              : (rod.toY * 100).round());
+                      return BarTooltipItem(
+                        title,
+                        const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: '\n${inr(valPaise)}',
+                            style: const TextStyle(
+                              color: Color(0xFF38BDF8),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                  },
                 ),
               ),
             ),
