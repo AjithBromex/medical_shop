@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../core/dates.dart';
@@ -125,44 +126,53 @@ $where GROUP BY s.id ORDER BY s.shop_name COLLATE NOCASE''', where.isEmpty ? nul
   }
 
   // ----------------------------------------------------------- collections
-  /// Computes the next receipt number by finding the highest existing sequence in collections
-  /// and preserving its prefix and padding (e.g. #14000 automatically continues as #14001).
-  Future<String> nextReceiptNumber() async {
+  /// Computes the next receipt number by continuing from the most recently entered/saved
+  /// sequence (e.g. #14000 -> #14001, or #02000 -> #02001).
+  /// If [baseReceipt] is provided, calculates the next available number from that specific sequence.
+  Future<String> nextReceiptNumber({String? baseReceipt}) async {
     final d = await _db;
-    final rows = await d.rawQuery('SELECT receipt_number FROM collections');
 
-    int maxNum = 0;
-    String prefix = '#';
-    int padLength = 6;
+    String? reference = baseReceipt?.trim();
+    if (reference == null || reference.isEmpty) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        reference = prefs.getString('last_saved_receipt_number')?.trim();
+      } catch (_) {}
+    }
 
-    for (final row in rows) {
-      final r = (row['receipt_number'] as String?)?.trim();
-      if (r == null || r.isEmpty) continue;
-      final match = RegExp(r'^(.*?)(\d+)$').firstMatch(r);
-      if (match != null) {
-        final p = match.group(1) ?? '#';
-        final digitsStr = match.group(2)!;
-        final val = int.tryParse(digitsStr);
-        if (val != null && val > maxNum) {
-          maxNum = val;
-          prefix = p;
-          padLength = digitsStr.length;
-        }
+    if (reference == null || reference.isEmpty) {
+      final rows = await d.rawQuery('SELECT receipt_number FROM collections ORDER BY id DESC LIMIT 1');
+      if (rows.isNotEmpty) {
+        reference = (rows.first['receipt_number'] as String?)?.trim();
       }
     }
 
-    // Also consider sqlite_sequence as a baseline fallback
-    final seq = Sqflite.firstIntValue(await d.rawQuery("SELECT seq FROM sqlite_sequence WHERE name='collections'")) ?? 0;
-    if (seq > maxNum) {
-      maxNum = seq;
+    String prefix = '#';
+    int padLength = 6;
+    int currentNum = 0;
+
+    if (reference != null && reference.isNotEmpty) {
+      final match = RegExp(r'^(.*?)(\d+)$').firstMatch(reference);
+      if (match != null) {
+        prefix = match.group(1) ?? '#';
+        final digitsStr = match.group(2)!;
+        padLength = digitsStr.length;
+        currentNum = int.tryParse(digitsStr) ?? 0;
+      }
     }
 
-    var nextNum = maxNum + 1;
+    var nextNum = currentNum + 1;
     if (nextNum <= 0) nextNum = 1;
 
     while (true) {
       final candidate = '$prefix${nextNum.toString().padLeft(padLength, '0')}';
-      final hit = await d.query('collections', columns: ['id'], where: 'receipt_number = ?', whereArgs: [candidate], limit: 1);
+      final hit = await d.query(
+        'collections',
+        columns: ['id'],
+        where: 'receipt_number = ?',
+        whereArgs: [candidate],
+        limit: 1,
+      );
       if (hit.isEmpty) return candidate;
       nextNum++;
     }
@@ -200,7 +210,7 @@ $where GROUP BY s.id ORDER BY s.shop_name COLLATE NOCASE''', where.isEmpty ? nul
   Future<int> saveCollection(Collection c) async {
     final d = await _db;
     if (await receiptExists(c.receiptNumber, exceptId: c.id)) {
-      throw RuleException('Receipt number “${c.receiptNumber}” is already used. Next free number: ${await nextReceiptNumber()}.');
+      throw RuleException('Receipt number “${c.receiptNumber}” is already used. Next free number: ${await nextReceiptNumber(baseReceipt: c.receiptNumber)}.');
     }
     try {
       int id;
@@ -211,6 +221,10 @@ $where GROUP BY s.id ORDER BY s.shop_name COLLATE NOCASE''', where.isEmpty ? nul
             where: 'id = ?', whereArgs: [c.id]);
         id = c.id!;
       }
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('last_saved_receipt_number', c.receiptNumber);
+      } catch (_) {}
       final saved = await collectionById(id) ?? c;
       await MongoDatabase.instance.upsertCollection(saved);
       return id;
