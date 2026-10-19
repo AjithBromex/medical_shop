@@ -26,13 +26,13 @@ int parseAmount(String? raw, String label, {bool allowZero = true}) {
   return paise;
 }
 
-/// ₹12,34,567.50 with Indian digit grouping.
+/// ₹12,34,567 with Indian digit grouping (no decimals for whole rupees).
 String inr(int? paise) {
   final p = paise ?? 0;
   final sign = p < 0 ? '-' : '';
   final abs = p.abs();
   final rupees = abs ~/ 100;
-  final ps = (abs % 100).toString().padLeft(2, '0');
+  final rem = abs % 100;
   var digits = rupees.toString();
   if (digits.length > 3) {
     var head = digits.substring(0, digits.length - 3);
@@ -45,14 +45,20 @@ String inr(int? paise) {
     if (head.isNotEmpty) groups.insert(0, head);
     digits = [...groups, tail].join(',');
   }
+  if (rem == 0) {
+    return '$sign₹$digits';
+  }
+  final ps = rem.toString().padLeft(2, '0');
   return '$sign₹$digits.$ps';
 }
 
-/// Plain decimal rupees for inputs / CSV, e.g. 1250.50
+/// Plain rupees for inputs / CSV, e.g. 1500 (or 1250.50 if paise != 0)
 String plain(int? paise) {
   final p = paise ?? 0;
   final abs = p.abs();
-  return '${p < 0 ? '-' : ''}${abs ~/ 100}.${(abs % 100).toString().padLeft(2, '0')}';
+  final rem = abs % 100;
+  if (rem == 0) return '${p < 0 ? '-' : ''}${abs ~/ 100}';
+  return '${p < 0 ? '-' : ''}${abs ~/ 100}.${rem.toString().padLeft(2, '0')}';
 }
 
 /// Float rupees - charts only, never calculations.

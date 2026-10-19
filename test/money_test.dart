@@ -21,12 +21,16 @@ void main() {
 
   group('formatting', () {
     test('Indian digit grouping', () {
-      expect(inr(0), '₹0.00');
+      expect(inr(0), '₹0');
       expect(inr(99999), '₹999.99');
       expect(inr(123456789), '₹12,34,567.89');
       expect(inr(-150050), '-₹1,500.50');
+      expect(inr(150000), '₹1,500');
     });
-    test('plain', () => expect(plain(125050), '1250.50'));
+    test('plain', () {
+      expect(plain(125050), '1250.50');
+      expect(plain(150000), '1500');
+    });
   });
 
   test('collection total = cash + gpay + cheque', () {
