@@ -25,28 +25,18 @@ class _ShopsScreenState extends State<ShopsScreen> {
   String _q = '';
 
   Future<void> _edit([MedicalShop? shop]) async {
-    await showModalBottomSheet(
+    await showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x330F172A),
-                blurRadius: 24,
-                offset: Offset(0, -4),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            top: false,
-            child: _ShopForm(shop: shop),
-          ),
+      barrierDismissible: true,
+      barrierColor: const Color(0x730F172A),
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+        clipBehavior: Clip.antiAlias,
+        child: SingleChildScrollView(
+          child: _ShopForm(shop: shop),
         ),
       ),
     );
@@ -352,39 +342,40 @@ class _ShopFormState extends State<_ShopForm> {
   }
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(22, 20, 20, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Center(
-              child: Container(
-                width: 38,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 18),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFCBD5E1),
-                  borderRadius: BorderRadius.circular(2),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  widget.shop == null ? 'Add customer' : 'Edit customer',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                    letterSpacing: -0.3,
+                  ),
                 ),
-              ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8), size: 22),
+                  onPressed: () => Navigator.pop(context),
+                  splashRadius: 20,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                ),
+              ],
             ),
-            Text(
-              widget.shop == null ? 'Add medical shop' : 'Edit shop',
-              style: const TextStyle(
-                fontSize: 18.5,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-                letterSpacing: -0.2,
-              ),
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             ErrorBox(_errors),
             TextField(
               controller: _name,
               autofocus: true,
               style: const TextStyle(
-                fontSize: 15,
+                fontSize: 15.5,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textPrimary,
               ),
@@ -393,41 +384,41 @@ class _ShopFormState extends State<_ShopForm> {
                 labelStyle: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF0369A1),
+                  color: Color(0xFF0284C7),
                 ),
                 prefixIcon: const Icon(
                   Icons.storefront_outlined,
                   color: AppColors.textPrimary,
                   size: 22,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                 filled: true,
                 fillColor: Colors.white,
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF0369A1), width: 1.6),
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Color(0xFF0284C7), width: 1.8),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF0369A1), width: 2.0),
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Color(0xFF0284C7), width: 2.2),
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF0369A1), width: 1.6),
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Color(0xFF0284C7), width: 1.8),
                 ),
               ),
               onSubmitted: (_) => _save(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             SizedBox(
-              height: 48,
+              height: 50,
               child: FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF0369A1),
+                  backgroundColor: const Color(0xFF0284C7),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
                 onPressed: _saving ? null : _save,
@@ -435,7 +426,7 @@ class _ShopFormState extends State<_ShopForm> {
                   widget.shop == null ? 'Save shop' : 'Update shop',
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 15.5,
+                    fontSize: 16,
                   ),
                 ),
               ),
