@@ -490,6 +490,7 @@ class StatCard extends StatelessWidget {
         iconColor: color,
         iconBg: color.withValues(alpha: 0.12),
       );
+}
 
 /// Responsive grid of cards.
 class CardGrid extends StatelessWidget {
