@@ -50,53 +50,125 @@ class DashboardScreen extends StatelessWidget {
           final remAll = d.all.total - d.expAll;
 
           return PageBody([
-            Wrap(spacing: 10, runSpacing: 10, children: [
-              GlassButton(
-                onPressed: () => onGo(1),
-                icon: Icons.add_circle_outline,
-                accentColor: AppColors.total,
-                isPrimary: true,
-                child: const Text('Add collection'),
-              ),
-              GlassButton(
-                onPressed: () => onGo(4),
-                icon: Icons.account_balance_wallet_outlined,
-                accentColor: AppColors.expenses,
-                child: const Text('Add expense'),
-              ),
-              GlassButton(
-                onPressed: () => onGo(3),
-                icon: Icons.bar_chart,
-                accentColor: AppColors.gpay,
-                child: const Text('Today’s analysis'),
-              ),
-              GlassButton(
-                onPressed: () => onGo(5),
-                icon: Icons.payments_outlined,
-                accentColor: AppColors.remaining,
-                child: const Text('Daily money'),
-              ),
-            ]),
             SectionTitle('Today — ${dmy(td)}'),
-            CardGrid([
-              StatCard('Cash collection', inr(d.t.cash), Icons.payments, AppColors.cash),
-              StatCard('Gpay/cheque/CN collection', inr(d.t.gpay + d.t.cheque), Icons.account_balance, AppColors.gpay),
-              StatCard('Total collection', inr(d.t.total), Icons.monetization_on_outlined, AppColors.total,
-                  sub: '${d.t.count} transaction${d.t.count == 1 ? '' : 's'}'),
-              StatCard('Total expenses', inr(d.expToday), Icons.receipt_long, AppColors.expenses),
-              StatCard('Remaining cash', inr(d.t.cash - d.expToday), Icons.account_balance_wallet_outlined,
-                  d.t.cash - d.expToday >= 0 ? AppColors.cash : AppColors.expenses,
-                  sub: 'Cash − expenses'),
-              StatCard('Total remaining', inr(remToday), Icons.savings_outlined, remToday >= 0 ? AppColors.cash : AppColors.expenses,
-                  sub: 'Total collection − expenses'),
-            ]),
+            const SizedBox(height: 12),
+
+            // 1. Hero Banner: Remaining Cash
+            _HeroBalanceCard(
+              amount: inr(d.t.cash - d.expToday),
+              subtext: 'Cash – expenses',
+              onTap: () => onGo(5),
+            ),
+            const SizedBox(height: 12),
+
+            // 2. Row of 2: Cash collection & Gpay/cheque/CN
+            Row(
+              children: [
+                Expanded(
+                  child: _MiniStatCard(
+                    label: 'Cash collection',
+                    value: inr(d.t.cash),
+                    icon: Icons.payments_outlined,
+                    iconColor: const Color(0xFF10B981),
+                    iconBg: const Color(0xFFE8F5E9),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MiniStatCard(
+                    label: 'Gpay/cheque/CN',
+                    value: inr(d.t.gpay + d.t.cheque),
+                    icon: Icons.account_balance_outlined,
+                    iconColor: const Color(0xFF3B82F6),
+                    iconBg: const Color(0xFFEFF6FF),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // 3. Full Width: Total Collection
+            _WideStatCard(
+              label: 'Total collection',
+              value: inr(d.t.total),
+              sub: '${d.t.count} transaction${d.t.count == 1 ? '' : 's'}',
+              icon: Icons.monetization_on_outlined,
+              iconColor: const Color(0xFF0284C7),
+              iconBg: const Color(0xFFE0F2FE),
+              onTap: () => onGo(2),
+            ),
+            const SizedBox(height: 12),
+
+            // 4. Row of 2: Total expenses & Total remaining
+            Row(
+              children: [
+                Expanded(
+                  child: _MiniStatCard(
+                    label: 'Total expenses',
+                    value: inr(d.expToday),
+                    icon: Icons.confirmation_number_outlined,
+                    iconColor: const Color(0xFFF43F5E),
+                    iconBg: const Color(0xFFFFE4E6),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MiniStatCard(
+                    label: 'Total remaining',
+                    value: inr(remToday),
+                    icon: Icons.savings_outlined,
+                    iconColor: const Color(0xFF10B981),
+                    iconBg: const Color(0xFFE8F5E9),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // 5. Section: All dates
             const SectionTitle('All dates'),
-            CardGrid([
-              StatCard('Total collection', inr(d.all.total), Icons.monetization_on_outlined, AppColors.total, sub: '${d.all.count} transactions'),
-              StatCard('Total expenses', inr(d.expAll), Icons.receipt_long, AppColors.expenses),
-              StatCard('Overall remaining balance', inr(remAll), Icons.savings_outlined, remAll >= 0 ? AppColors.cash : AppColors.expenses),
-            ], minWidth: 300),
+            const SizedBox(height: 12),
+
+            // 6. Row of 2: Total collection & Total expenses (All dates)
+            Row(
+              children: [
+                Expanded(
+                  child: _MiniStatCard(
+                    label: 'Total collection',
+                    value: inr(d.all.total),
+                    sub: '${d.all.count} transactions',
+                    icon: Icons.monetization_on_outlined,
+                    iconColor: const Color(0xFF0284C7),
+                    iconBg: const Color(0xFFE0F2FE),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MiniStatCard(
+                    label: 'Total expenses',
+                    value: inr(d.expAll),
+                    icon: Icons.confirmation_number_outlined,
+                    iconColor: const Color(0xFFF43F5E),
+                    iconBg: const Color(0xFFFFE4E6),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // 7. Full Width: Overall remaining balance
+            _WideStatCard(
+              label: 'Overall remaining balance',
+              value: inr(remAll),
+              icon: Icons.savings_outlined,
+              iconColor: const Color(0xFF10B981),
+              iconBg: const Color(0xFFE8F5E9),
+            ),
+            const SizedBox(height: 24),
+
+            // 8. Weekly Chart Section
             const SectionTitle('Last 7 days — collection by payment method, with expenses'),
+            const SizedBox(height: 12),
             GlassCard(
               padding: const EdgeInsets.all(16),
               child: d.all.count == 0 && d.expAll == 0
@@ -110,18 +182,17 @@ class DashboardScreen extends StatelessWidget {
                       line: Series('Expenses', AppColors.expenses, [for (final r in series) r.expenses]),
                     ),
             ),
-            const SectionTitle('All-time collection by payment method'),
-            GlassCard(
-              padding: const EdgeInsets.all(16),
-              child: d.all.total == 0
-                  ? const EmptyState('Nothing collected yet.', icon: Icons.pie_chart_outline)
-                  : DoughnutChart(
-                      labels: const ['Cash', 'Gpay/cheque/CN'],
-                      paise: [d.all.cash, d.all.gpay + d.all.cheque],
-                      colors: const [AppColors.cash, AppColors.gpay],
-                    ),
+            const SizedBox(height: 18),
+
+            // 9. Recent collections
+            SectionTitle(
+              'Recent collections',
+              trailing: TextButton(
+                onPressed: () => onGo(2),
+                child: const Text('View all', style: TextStyle(color: AppColors.total, fontWeight: FontWeight.w700)),
+              ),
             ),
-            SectionTitle('Recent collections', trailing: TextButton(onPressed: () => onGo(2), child: const Text('View all', style: TextStyle(color: AppColors.total)))),
+            const SizedBox(height: 10),
             GlassCard(
               padding: EdgeInsets.zero,
               child: d.recent.isEmpty
@@ -130,34 +201,329 @@ class DashboardScreen extends StatelessWidget {
                       for (var i = 0; i < d.recent.length; i++) ...[
                         ListTile(
                           dense: true,
-                          title: Text('${d.recent[i].receiptNumber} · ${d.recent[i].shopName}', style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          title: Text(
+                            '${d.recent[i].receiptNumber} · ${d.recent[i].shopName}',
+                            style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                          ),
                           subtitle: Text(dmy(d.recent[i].date), style: const TextStyle(color: AppColors.textSecondary)),
-                          trailing: Text(inr(d.recent[i].total), style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.total)),
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReceiptScreen(collectionId: d.recent[i].id!))),
+                          trailing: Text(
+                            inr(d.recent[i].total),
+                            style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.total),
+                          ),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => ReceiptScreen(collectionId: d.recent[i].id!)),
+                          ),
                         ),
-                        if (i < d.recent.length - 1) Divider(height: 1, color: Colors.white.withValues(alpha: 0.08)),
+                        if (i < d.recent.length - 1) const Divider(height: 1, color: AppColors.border),
                       ],
                     ]),
             ),
-            SectionTitle('Recent expenses', trailing: TextButton(onPressed: () => onGo(4), child: const Text('View all', style: TextStyle(color: AppColors.total)))),
-            GlassCard(
-              padding: EdgeInsets.zero,
-              child: d.recentExp.isEmpty
-                  ? const EmptyState('No expenses yet.')
-                  : Column(children: [
-                      for (var i = 0; i < d.recentExp.length; i++) ...[
-                        ListTile(
-                          dense: true,
-                          title: Text('${d.recentExp[i].category} · ${d.recentExp[i].description}', style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                          subtitle: Text('${d.recentExp[i].displayId} · ${dmy(d.recentExp[i].date)}', style: const TextStyle(color: AppColors.textSecondary)),
-                          trailing: Text(inr(d.recentExp[i].amount), style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.expenses)),
-                        ),
-                        if (i < d.recentExp.length - 1) Divider(height: 1, color: Colors.white.withValues(alpha: 0.08)),
-                      ],
-                    ]),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
           ]);
         },
       );
+}
+
+// ------------------------------------------------------------- Specialized Stat Widgets matching Reference Mockup
+
+class _HeroBalanceCard extends StatelessWidget {
+  final String amount;
+  final String subtext;
+  final VoidCallback? onTap;
+
+  const _HeroBalanceCard({
+    required this.amount,
+    required this.subtext,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF0C4A6E), Color(0xFF0284C7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x330284C7),
+                blurRadius: 18,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.28),
+                    width: 1.2,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet_outlined,
+                  color: Color(0xFF38BDF8),
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Remaining cash',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      amount,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 27,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.6,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtext,
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D9488).withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF2DD4BF).withValues(alpha: 0.6)),
+                ),
+                child: const Text(
+                  'CURRENT\nBALANCE',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF5EEAD4),
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                    height: 1.15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniStatCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final String? sub;
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBg;
+  final VoidCallback? onTap;
+
+  const _MiniStatCard({
+    required this.label,
+    required this.value,
+    this.sub,
+    required this.icon,
+    required this.iconColor,
+    required this.iconBg,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A0F172A),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF64748B),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF0F172A),
+              letterSpacing: -0.4,
+            ),
+          ),
+          if (sub != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              sub!,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF94A3B8),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _WideStatCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final String? sub;
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBg;
+  final VoidCallback? onTap;
+
+  const _WideStatCard({
+    required this.label,
+    required this.value,
+    this.sub,
+    required this.icon,
+    required this.iconColor,
+    required this.iconBg,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A0F172A),
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: iconColor, size: 26),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    if (sub != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        sub!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

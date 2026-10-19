@@ -170,11 +170,12 @@ class ShellState extends State<Shell> {
                     )
                   : Builder(
                       builder: (c) => IconButton(
-                        icon: const Icon(Icons.menu_rounded),
+                        icon: const Icon(Icons.menu_rounded, size: 24, color: AppColors.textPrimary),
                         tooltip: 'Open menu',
                         onPressed: () => Scaffold.of(c).openDrawer(),
                       ),
                     ),
+              centerTitle: true,
               title: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 180),
                 child: _index == 0
@@ -182,29 +183,15 @@ class ShellState extends State<Shell> {
                     : Text(
                         dest.label,
                         key: ValueKey(dest.label),
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary),
                       ),
               ),
-              actions: [
-                const SyncStatusHeaderButton(compact: true),
-                if (_index != 1)
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline, color: AppColors.total),
-                    tooltip: 'Add collection',
-                    onPressed: () => go(1),
-                  ),
-                if (_index != 0)
-                  Builder(
-                    builder: (c) => IconButton(
-                      icon: const Icon(Icons.menu_rounded),
-                      tooltip: 'All menus',
-                      onPressed: () => Scaffold.of(c).openDrawer(),
-                    ),
-                  ),
+              actions: const [
+                SyncStatusHeaderButton(compact: true),
               ],
-              backgroundColor: Colors.white.withValues(alpha: 0.95),
+              backgroundColor: Colors.white,
               elevation: 0,
-              shape: const Border(bottom: BorderSide(color: AppColors.border)),
+              shape: const Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
             ),
       drawer: wide
           ? null
@@ -217,43 +204,38 @@ class ShellState extends State<Shell> {
           : Container(
               decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(top: BorderSide(color: AppColors.border, width: 1.2)),
+                border: Border(top: BorderSide(color: Color(0xFFE2E8F0), width: 1.2)),
                 boxShadow: [
                   BoxShadow(
                     color: Color(0x0D0F172A),
-                    blurRadius: 12,
-                    offset: Offset(0, -3),
+                    blurRadius: 16,
+                    offset: Offset(0, -4),
                   ),
                 ],
               ),
               child: SafeArea(
                 child: SizedBox(
-                  height: 64,
+                  height: 68,
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _MobileNavItem(
-                        icon: Icons.speed,
+                        icon: Icons.home_rounded,
                         label: 'Home',
                         isSelected: _index == 0,
                         onTap: () => go(0),
                       ),
                       _MobileNavItem(
-                        icon: Icons.add_circle_outline,
-                        activeIcon: Icons.add_circle,
-                        label: 'Add',
-                        isAction: true,
-                        isSelected: _index == 1,
-                        onTap: () => go(1),
-                      ),
-                      _MobileNavItem(
-                        icon: Icons.menu_book_outlined,
+                        icon: Icons.receipt_long_outlined,
                         label: 'History',
                         isSelected: _index == 2,
                         onTap: () => go(2),
                       ),
+                      _CenterAddButton(
+                        isSelected: _index == 1,
+                        onTap: () => go(1),
+                      ),
                       _MobileNavItem(
-                        icon: Icons.bar_chart,
+                        icon: Icons.bar_chart_rounded,
                         label: 'Analysis',
                         isSelected: _index == 3,
                         onTap: () => go(3),
@@ -455,122 +437,115 @@ class _MoreSheetTile extends StatelessWidget {
   }
 }
 
-class _MobileNavItem extends StatefulWidget {
+class _MobileNavItem extends StatelessWidget {
   final IconData icon;
-  final IconData? activeIcon;
   final String label;
   final bool isSelected;
-  final bool isAction;
   final VoidCallback onTap;
 
   const _MobileNavItem({
     required this.icon,
-    this.activeIcon,
     required this.label,
     required this.isSelected,
-    this.isAction = false,
     required this.onTap,
   });
 
   @override
-  State<_MobileNavItem> createState() => _MobileNavItemState();
+  Widget build(BuildContext context) {
+    const activeColor = Color(0xFF0284C7);
+    const inactiveColor = Color(0xFF64748B);
+
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFFE0F2FE) : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? activeColor : inactiveColor,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? activeColor : inactiveColor,
+                letterSpacing: -0.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _MobileNavItemState extends State<_MobileNavItem> {
-  bool _isPressed = false;
+class _CenterAddButton extends StatelessWidget {
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _CenterAddButton({
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    const activeColor = AppColors.total;
-    const inactiveColor = AppColors.textSecondary;
-    final iconColor = widget.isSelected ? activeColor : inactiveColor;
-
-    if (widget.isAction) {
-      return GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) => setState(() => _isPressed = false),
-        onTapCancel: () => setState(() => _isPressed = false),
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          scale: _isPressed ? 0.90 : 1.0,
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeOutCubic,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 44,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: widget.isSelected ? activeColor : activeColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: activeColor.withValues(alpha: 0.4),
-                    width: 1.2,
-                  ),
-                ),
-                child: Icon(
-                  widget.isSelected ? (widget.activeIcon ?? widget.icon) : widget.icon,
-                  color: widget.isSelected ? Colors.white : activeColor,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                widget.label,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: widget.isSelected ? FontWeight.w800 : FontWeight.w600,
-                  color: widget.isSelected ? activeColor : inactiveColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) => setState(() => _isPressed = false),
-        onTapCancel: () => setState(() => _isPressed = false),
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          scale: _isPressed ? 0.92 : 1.0,
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeOutCubic,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                decoration: BoxDecoration(
-                  color: widget.isSelected
-                      ? activeColor.withValues(alpha: 0.12)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  widget.isSelected ? (widget.activeIcon ?? widget.icon) : widget.icon,
-                  color: iconColor,
-                  size: 22,
-                ),
+      child: InkWell(
+        onTap: onTap,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: const BoxDecoration(
+                color: Color(0xFF0284C7),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x4D0284C7),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
               ),
-              const SizedBox(height: 2),
-              Text(
-                widget.label,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: widget.isSelected ? FontWeight.w800 : FontWeight.w600,
-                  color: iconColor,
-                ),
+              child: const Icon(
+                Icons.add,
+                color: Colors.white,
+                size: 28,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 3),
+            const Text(
+              'Add',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF475569),
+                letterSpacing: -0.1,
+              ),
+            ),
+          ],
         ),
       ),
     );
