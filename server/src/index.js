@@ -33,7 +33,15 @@ app.get('/health', (req, res) => {
 
 // API Key Authentication Middleware
 const REQUIRED_API_KEY = process.env.API_KEY;
-app.use('/api', (req, res, next) => {
+const protectedPaths = [
+  '/api',
+  '/shops',
+  '/collections',
+  '/expenses',
+  '/reports',
+  '/sync',
+];
+app.use(protectedPaths, (req, res, next) => {
   if (!REQUIRED_API_KEY) {
     // If no API_KEY configured on server, allow for backward compatibility/local test
     return next();
@@ -45,12 +53,12 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-// API Routes
-app.use('/api/shops', shopsRouter);
-app.use('/api/collections', collectionsRouter);
-app.use('/api/expenses', expensesRouter);
-app.use('/api/reports', reportsRouter);
-app.use('/api/sync', syncRouter);
+// API Routes (mounted on both /api/resource and /resource for client compatibility)
+app.use(['/api/shops', '/shops'], shopsRouter);
+app.use(['/api/collections', '/collections'], collectionsRouter);
+app.use(['/api/expenses', '/expenses'], expensesRouter);
+app.use(['/api/reports', '/reports'], reportsRouter);
+app.use(['/api/sync', '/sync'], syncRouter);
 
 // 404 Handler
 app.use((req, res) => {

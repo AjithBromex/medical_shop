@@ -33,13 +33,25 @@ class ApiService {
   String get baseUrl => _baseUrl;
   String get apiKey => _apiKey;
 
+  static String normalizeBaseUrl(String url) {
+    var trimmed = url.trim();
+    while (trimmed.endsWith('/')) {
+      trimmed = trimmed.substring(0, trimmed.length - 1);
+    }
+    if (trimmed.isEmpty) return defaultBaseUrl;
+    if (!trimmed.endsWith('/api')) {
+      trimmed = '$trimmed/api';
+    }
+    return trimmed;
+  }
+
   Future<void> init() async {
     if (_initialized) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedUrl = prefs.getString('server_api_url');
       if (savedUrl != null && savedUrl.trim().isNotEmpty) {
-        _baseUrl = savedUrl.trim();
+        _baseUrl = normalizeBaseUrl(savedUrl);
       }
       final savedKey = prefs.getString('server_api_key');
       if (savedKey != null && savedKey.trim().isNotEmpty) {
@@ -50,7 +62,7 @@ class ApiService {
   }
 
   Future<void> updateConfig({required String newUrl, String? newApiKey}) async {
-    _baseUrl = newUrl.trim();
+    _baseUrl = normalizeBaseUrl(newUrl);
     if (newApiKey != null) _apiKey = newApiKey.trim();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('server_api_url', _baseUrl);
