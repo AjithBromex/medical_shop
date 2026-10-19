@@ -14,13 +14,13 @@ A REST API backend connected to MongoDB Atlas for the Oscar Pharma Medical Shop 
    ```
 
 2. **Verify `.env` configuration**:
-   Ensure `server/.env` contains your MongoDB Atlas connection string:
+   Ensure `server/.env` contains your MongoDB Atlas connection string (copy from `.env.example`):
    ```env
    PORT=5000
-   MONGODB_URI=mongodb+srv://ajithnpofficial_db_user:XM508St1NO7NMdCu@medicalshop.p6sujar.mongodb.net/medical_shop?retryWrites=true&w=majority
+   MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/medical_shop?retryWrites=true&w=majority
    ```
 
-3. **Install dependencies** (already done):
+3. **Install dependencies**:
    ```bash
    npm install
    ```
@@ -36,15 +36,16 @@ A REST API backend connected to MongoDB Atlas for the Oscar Pharma Medical Shop 
 
 ---
 
-## Fixing MongoDB Atlas "bad auth : authentication failed"
-If MongoDB Atlas returns `authentication failed` when connecting, check these two settings in your **[MongoDB Atlas Console](https://cloud.mongodb.com/)**:
+## MongoDB Atlas Configuration
+
+If MongoDB Atlas returns `authentication failed` or connection timeout when connecting, verify your settings in the **[MongoDB Atlas Console](https://cloud.mongodb.com/)**:
 
 1. **Database Access (User & Password)**:
    - Navigate to **Security** > **Database Access**.
-   - Ensure the user `ajithnpofficial_db_user` exists.
-   - Click **Edit** > **Edit Password** and ensure the password matches `XM508St1NO7NMdCu`.
-   - Ensure the user has the **Read and write to any database** role.
-2. **Network Access (IP Whitelist)**:
+   - Create or edit a database user with password authentication.
+   - Assign the **Read and write to any database** built-in role.
+   - If special characters are used in the password, ensure it is properly URL-encoded in the connection URI.
+2. **Network Access (IP Access List)**:
    - Navigate to **Security** > **Network Access**.
    - Click **Add IP Address**.
    - Choose **Add Current IP Address** or **Allow Access from Anywhere (`0.0.0.0/0`)** for development.

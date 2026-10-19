@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'models.dart';
 
@@ -6,17 +8,64 @@ class ApiService {
   static final ApiService instance = ApiService._();
   ApiService._();
 
-  // Change this if running on a remote server or emulator (e.g. 10.0.2.2 for Android emulator)
-  String baseUrl = 'http://localhost:5000/api';
+  static String get defaultBaseUrl {
+    const envUrl = String.fromEnvironment('API_BASE_URL');
+    if (envUrl.isNotEmpty) return envUrl;
+    if (!kIsWeb && Platform.isAndroid) {
+      return 'http://10.0.2.2:5000/api';
+    }
+    return 'http://localhost:5000/api';
+  }
+
+  late String baseUrl = defaultBaseUrl;
 
   Map<String, String> get _headers => {'Content-Type': 'application/json'};
 
   // ------------------------------------------------------------- Health
   Future<bool> checkHealth() async {
     try {
-      final res = await http.get(Uri.parse('${baseUrl.replaceAll('/api', '')}/health'));
+      final healthUri = Uri.parse(baseUrl.replaceAll(RegExp(r'/api/?$'), '') + '/health');
+      final res = await http.get(healthUri).timeout(const Duration(seconds: 4));
       return res.statusCode == 200;
     } catch (_) {
+      return false;
+    }
+  }
+
+  // ------------------------------------------------------------- Sync
+  Future<Map<String, dynamic>?> getAllSyncData() async {
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/sync/all'), headers: _headers).timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) return null;
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('[ApiService] getAllSyncData error: $e');
+      return null;
+    }
+  }
+
+  Future<bool> pushSyncBatch({
+    List<Map<String, dynamic>> shops = const [],
+    List<Map<String, dynamic>> collections = const [],
+    List<Map<String, dynamic>> expenses = const [],
+    List<String> categories = const [],
+  }) async {
+    try {
+      final res = await http
+          .post(
+            Uri.parse('$baseUrl/sync/push'),
+            headers: _headers,
+            body: jsonEncode({
+              'shops': shops,
+              'collections': collections,
+              'expenses': expenses,
+              'categories': categories,
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
+      return res.statusCode == 200;
+    } catch (e) {
+      debugPrint('[ApiService] pushSyncBatch error: $e');
       return false;
     }
   }
@@ -40,40 +89,26 @@ class ApiService {
   }
 
   Future<void> saveShop(MedicalShop shop) async {
-    if (shop.id != null) {
-      // update
-      final res = await http.put(
-        Uri.parse('$baseUrl/shops/${shop.id}'),
-        headers: _headers,
-        body: jsonEncode({
-          'name': shop.name,
-          'notes': shop.notes,
-          'phone': shop.phone,
-          'address': shop.address,
-          'active': shop.isActive,
-        }),
-      );
-      if (res.statusCode != 200) throw Exception('Failed to update shop: ${res.body}');
-    } else {
-      // create
-      final res = await http.post(
-        Uri.parse('$baseUrl/shops'),
-        headers: _headers,
-        body: jsonEncode({
-          'name': shop.name,
-          'notes': shop.notes,
-          'phone': shop.phone,
-          'address': shop.address,
-          'active': shop.isActive,
-        }),
-      );
-      if (res.statusCode != 201) throw Exception('Failed to create shop: ${res.body}');
+    final res = await http.post(
+      Uri.parse('$baseUrl/shops'),
+      headers: _headers,
+      body: jsonEncode({
+        'name': shop.name.trim(),
+        'notes': shop.notes ?? '',
+        'phone': shop.phone ?? '',
+        'address': shop.address ?? '',
+        'active': shop.isActive,
+      }),
+    );
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw Exception('Failed to save shop to Atlas: ${res.body}');
     }
   }
 
-  Future<void> deleteShop(String shopId) async {
-    final res = await http.delete(Uri.parse('$baseUrl/shops/$shopId'), headers: _headers);
-    if (res.statusCode != 200) throw Exception('Failed to delete shop: ${res.body}');
+  Future<void> deleteShopByName(String name) async {
+    final encoded = Uri.encodeComponent(name.trim());
+    final res = await http.delete(Uri.parse('$baseUrl/shops/by-name/$encoded'), headers: _headers);
+    if (res.statusCode != 200) throw Exception('Failed to delete shop from Atlas: ${res.body}');
   }
 
   // ------------------------------------------------------------- Collections
@@ -85,10 +120,12 @@ class ApiService {
     String? method,
     int page = 1,
     int limit = 50,
+    bool all = false,
   }) async {
     final params = <String, String>{
       'page': page.toString(),
       'limit': limit.toString(),
+      if (all) 'all': 'true',
     };
     if (q != null && q.isNotEmpty) params['q'] = q;
     if (dateFrom != null) params['dateFrom'] = dateFrom.toIso8601String();
@@ -102,31 +139,39 @@ class ApiService {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
-  Future<void> createCollection({
-    required String shopId,
+  Future<void> createOrUpdateCollection({
+    required String receiptNumber,
     required String shopName,
+    dynamic shopId,
     required DateTime date,
     required int cash,
     required int gpay,
     required int cheque,
-    String? receiptNumber,
     String? notes,
   }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/collections'),
       headers: _headers,
       body: jsonEncode({
-        if (receiptNumber != null && receiptNumber.isNotEmpty) 'receiptNumber': receiptNumber,
-        'shopId': shopId,
-        'shopName': shopName,
+        'receiptNumber': receiptNumber.trim(),
+        if (shopId != null) 'shopId': shopId,
+        'shopName': shopName.trim(),
         'date': date.toIso8601String(),
         'cash': cash,
         'gpay': gpay,
         'cheque': cheque,
-        if (notes != null) 'notes': notes,
+        'notes': notes ?? '',
       }),
     );
-    if (res.statusCode != 201) throw Exception('Failed to create collection: ${res.body}');
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw Exception('Failed to save collection to Atlas: ${res.body}');
+    }
+  }
+
+  Future<void> deleteCollectionByReceipt(String receiptNumber) async {
+    final encoded = Uri.encodeComponent(receiptNumber.trim());
+    final res = await http.delete(Uri.parse('$baseUrl/collections/by-receipt/$encoded'), headers: _headers);
+    if (res.statusCode != 200) throw Exception('Failed to delete collection from Atlas: ${res.body}');
   }
 
   // ------------------------------------------------------------- Expenses
@@ -137,10 +182,12 @@ class ApiService {
     String? category,
     int page = 1,
     int limit = 50,
+    bool all = false,
   }) async {
     final params = <String, String>{
       'page': page.toString(),
       'limit': limit.toString(),
+      if (all) 'all': 'true',
     };
     if (q != null && q.isNotEmpty) params['q'] = q;
     if (dateFrom != null) params['dateFrom'] = dateFrom.toIso8601String();
@@ -153,27 +200,35 @@ class ApiService {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
-  Future<void> createExpense({
+  Future<void> createOrUpdateExpense({
+    required String displayId,
     required DateTime date,
     required String category,
     required String description,
     required int amount,
     String? notes,
-    String? displayId,
   }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/expenses'),
       headers: _headers,
       body: jsonEncode({
-        if (displayId != null) 'displayId': displayId,
+        'displayId': displayId.trim(),
         'date': date.toIso8601String(),
-        'category': category,
+        'category': category.trim(),
         'description': description,
         'amount': amount,
-        if (notes != null) 'notes': notes,
+        'notes': notes ?? '',
       }),
     );
-    if (res.statusCode != 201) throw Exception('Failed to create expense: ${res.body}');
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw Exception('Failed to save expense to Atlas: ${res.body}');
+    }
+  }
+
+  Future<void> deleteExpenseByDisplayId(String displayId) async {
+    final encoded = Uri.encodeComponent(displayId.trim());
+    final res = await http.delete(Uri.parse('$baseUrl/expenses/by-display-id/$encoded'), headers: _headers);
+    if (res.statusCode != 200) throw Exception('Failed to delete expense from Atlas: ${res.body}');
   }
 
   Future<List<String>> categories() async {
@@ -181,6 +236,23 @@ class ApiService {
     if (res.statusCode != 200) throw Exception('Failed to load categories: ${res.body}');
     final list = jsonDecode(res.body) as List;
     return list.map((e) => e.toString()).toList();
+  }
+
+  Future<void> addCategory(String name) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/expenses/categories'),
+      headers: _headers,
+      body: jsonEncode({'name': name.trim()}),
+    );
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw Exception('Failed to add category: ${res.body}');
+    }
+  }
+
+  Future<void> deleteCategory(String name) async {
+    final encoded = Uri.encodeComponent(name.trim());
+    final res = await http.delete(Uri.parse('$baseUrl/expenses/categories/$encoded'), headers: _headers);
+    if (res.statusCode != 200) throw Exception('Failed to delete category: ${res.body}');
   }
 
   // ------------------------------------------------------------- Reports & Dashboard

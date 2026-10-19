@@ -9,9 +9,9 @@ const collectionSchema = new mongoose.Schema(
       trim: true,
     },
     shopId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.Mixed,
       ref: 'Shop',
-      required: true,
+      required: false,
     },
     shopName: {
       type: String,

@@ -3,14 +3,35 @@
 A Flutter/Dart port of the Flask + SQLite web app. It runs **fully offline** on Android, iOS,
 Windows, macOS and Linux with a local SQLite database (sqflite).
 
-## Run it
+## Quick Start
+
+### 1. Start the Backend (Connects securely to MongoDB Atlas)
+The Flutter app securely persists and syncs data to MongoDB Atlas through the Node.js Express backend API:
 ```bash
-flutter create . --platforms=android,ios,windows,macos,linux   # one-time: generates platform folders
+cd server
+cp .env.example .env     # Copy environment file
+# Edit .env and paste your MongoDB Atlas connection string:
+# MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/medical_shop?retryWrites=true&w=majority
+npm install
+npm start
+```
+The server runs on `http://localhost:5000` (health check: `http://localhost:5000/health`).
+
+### 2. Run the Flutter App
+In the root directory:
+```bash
 flutter pub get
 flutter run
+```
+*Note for Android Emulator:* The app automatically targets `http://10.0.2.2:5000/api` on Android emulators and `http://localhost:5000/api` on desktop and web. A custom base URL can also be passed at build/run time:
+```bash
+flutter run --dart-define=API_BASE_URL=http://your-server-ip:5000/api
+```
+
+### 3. Run Tests
+```bash
 flutter test
 ```
-`flutter create .` keeps `lib/`, `pubspec.yaml` and `test/` as they are and only adds the platform folders.
 
 On the **first launch** the sign-in screen asks you to create the admin account (username ≥ 3 and
 password ≥ 8 characters). Passwords are stored as salted SHA-256 hashes; 5 failed sign-ins lock

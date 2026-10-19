@@ -24,19 +24,25 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// CREATE shop
+// CREATE or UPSERT shop
 router.post('/', async (req, res) => {
   try {
     const { name, notes, phone, address, active } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'Shop name is required' });
     }
-    const existing = await Shop.findOne({ name: name.trim() });
-    if (existing) {
-      return res.status(400).json({ error: 'A medical shop with this name already exists' });
+    const trimmedName = name.trim();
+    let shop = await Shop.findOne({ name: trimmedName });
+    if (shop) {
+      if (notes !== undefined) shop.notes = notes;
+      if (phone !== undefined) shop.phone = phone;
+      if (address !== undefined) shop.address = address;
+      if (active !== undefined) shop.active = active;
+      await shop.save();
+      return res.status(200).json(shop);
     }
-    const shop = new Shop({
-      name: name.trim(),
+    shop = new Shop({
+      name: trimmedName,
       notes: notes || '',
       phone: phone || '',
       address: address || '',
@@ -44,6 +50,29 @@ router.post('/', async (req, res) => {
     });
     await shop.save();
     res.status(201).json(shop);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE shop by name
+router.delete('/by-name/:name', async (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name).trim();
+    const shop = await Shop.findOne({ name });
+    if (!shop) return res.json({ message: 'Shop not found or already deleted', name });
+
+    const count = await Collection.countDocuments({
+      $or: [{ shopId: shop._id }, { shopName: name }],
+    });
+    if (count > 0) {
+      return res.status(400).json({
+        error: `Cannot delete: Shop has ${count} recorded collection(s). Deactivate it instead.`,
+      });
+    }
+
+    await Shop.findByIdAndDelete(shop._id);
+    res.json({ message: 'Shop deleted successfully', name });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

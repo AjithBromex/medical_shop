@@ -7,6 +7,7 @@ const shopsRouter = require('./routes/shops');
 const collectionsRouter = require('./routes/collections');
 const expensesRouter = require('./routes/expenses');
 const reportsRouter = require('./routes/reports');
+const syncRouter = require('./routes/sync');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -35,6 +36,7 @@ app.use('/api/shops', shopsRouter);
 app.use('/api/collections', collectionsRouter);
 app.use('/api/expenses', expensesRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/sync', syncRouter);
 
 // 404 Handler
 app.use((req, res) => {

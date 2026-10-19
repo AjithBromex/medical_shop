@@ -75,12 +75,14 @@ router.get('/', async (req, res) => {
       filter.$or = [{ description: regex }, { notes: regex }, { displayId: regex }];
     }
 
-    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const isAll = req.query.all === 'true' || limit === '0' || parseInt(limit, 10) >= 100000;
     const totalCount = await Expense.countDocuments(filter);
-    const expenses = await Expense.find(filter)
-      .sort({ date: -1, createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit, 10));
+    const query = Expense.find(filter).sort({ date: -1, createdAt: -1 });
+    if (!isAll) {
+      const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+      query.skip(skip).limit(parseInt(limit, 10));
+    }
+    const expenses = await query;
 
     const totalAgg = await Expense.aggregate([
       { $match: filter },
@@ -114,6 +116,8 @@ router.post('/', async (req, res) => {
 
     if (!displayId || !displayId.trim()) {
       displayId = await getNextExpenseId();
+    } else {
+      displayId = displayId.trim();
     }
 
     // Auto-create category if missing
@@ -123,7 +127,18 @@ router.post('/', async (req, res) => {
       { upsert: true }
     );
 
-    const expense = new Expense({
+    let expense = await Expense.findOne({ displayId });
+    if (expense) {
+      expense.date = new Date(date);
+      expense.category = category.trim();
+      expense.description = description || '';
+      expense.amount = amount;
+      if (notes !== undefined) expense.notes = notes;
+      await expense.save();
+      return res.status(200).json(expense);
+    }
+
+    expense = new Expense({
       displayId,
       date: new Date(date),
       category: category.trim(),
@@ -160,6 +175,16 @@ router.put('/:id', async (req, res) => {
 
     await expense.save();
     res.json(expense);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/by-display-id/:displayId', async (req, res) => {
+  try {
+    const displayId = decodeURIComponent(req.params.displayId).trim();
+    await Expense.findOneAndDelete({ displayId });
+    res.json({ message: 'Expense deleted successfully', displayId });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
