@@ -123,7 +123,7 @@ class _CollectionFormState extends State<CollectionForm> {
     if (shop == null) {
       errors.add('Please select a medical shop.');
     } else if (!shop.isActive && !(widget.existing != null && widget.existing!.shopId == shop.id)) {
-      errors.add('That shop is inactive. Activate it in Admin - Medical Shops first.');
+      errors.add('That shop is inactive. Activate it in Admin - Customers first.');
     }
 
     var cash = 0, gpayCheque = 0;
@@ -245,7 +245,7 @@ class _CollectionFormState extends State<CollectionForm> {
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'No active medical shops yet. Add one in Admin - Medical Shops first.',
+                  'No active medical shops yet. Add one in Admin - Customers first.',
                   style: TextStyle(color: Color(0xFF9A3412), fontWeight: FontWeight.w600, fontSize: 13),
                 ),
               ),

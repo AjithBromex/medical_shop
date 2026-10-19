@@ -35,7 +35,7 @@ class ShellState extends State<Shell> {
     const _Dest('Expenses', Icons.account_balance_wallet_outlined, ExpensesScreen.new),
     const _Dest('Daily Money', Icons.payments_outlined, DailyMoneyScreen.new),
     const _Dest('Reports', Icons.description_outlined, ReportsScreen.new),
-    const _Dest('Admin - Medical Shops', Icons.storefront_outlined, ShopsScreen.new),
+    const _Dest('Admin - Customers', Icons.storefront_outlined, ShopsScreen.new),
   ];
 
   void go(int i) {
@@ -126,7 +126,7 @@ class ShellState extends State<Shell> {
               },
             ),
             _MoreSheetTile(
-              title: 'Admin - Medical Shops',
+              title: 'Admin - Customers',
               subtitle: 'Manage client medical shops and contacts',
               icon: Icons.storefront_outlined,
               color: AppColors.cash,

@@ -101,7 +101,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               onPressed: _edit,
               icon: const Icon(Icons.add),
-              label: const Text('Add shop', style: TextStyle(fontWeight: FontWeight.w700)),
+              label: const Text('Add', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
           ),
           body: PageBody([
