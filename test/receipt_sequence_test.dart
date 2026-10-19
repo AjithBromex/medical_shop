@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:medical_shop_manager/data/models.dart';
 import 'package:medical_shop_manager/data/repository.dart';
+import 'package:medical_shop_manager/screens/receipt_screen.dart';
 
 void main() {
   group('Receipt Number Sequencing Parsing Logic', () {
@@ -31,6 +33,24 @@ void main() {
     test('custom prefixes continue correctly', () {
       expect(computeNext('REC-100'), 'REC-101');
       expect(computeNext('14000'), '14001');
+    });
+
+    test('ReceiptScreen builds PDF document matching new format without errors', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final c = Collection(
+        id: 1,
+        receiptNumber: '#140000',
+        date: DateTime(2026, 10, 19),
+        shopId: 1,
+        shopName: 'rr',
+        cash: 2000,
+        gpay: 0,
+        cheque: 0,
+        createdAt: DateTime(2026, 10, 19, 21, 33),
+      );
+      final doc = await const ReceiptScreen(collectionId: 1).buildPdfDoc(c);
+      final bytes = await doc.save();
+      expect(bytes.isNotEmpty, isTrue);
     });
   });
 }
