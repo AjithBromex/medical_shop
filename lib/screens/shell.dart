@@ -511,44 +511,53 @@ class _CenterAddButton extends StatelessWidget {
         onTap: onTap,
         splashColor: Colors.transparent,
         highlightColor: Colors.transparent,
-        child: Transform.translate(
-          offset: const Offset(0, -8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0284C7),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF0284C7).withValues(alpha: 0.38),
-                      blurRadius: 14,
-                      offset: const Offset(0, 5),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              height: 32,
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  Positioned(
+                    top: -14,
+                    child: Container(
+                      width: 54,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0284C7),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0284C7).withValues(alpha: 0.42),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 32,
+                      ),
                     ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.add,
-                  color: Colors.white,
-                  size: 32,
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 3),
-              Text(
-                'Add',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
-                  color: isSelected ? const Color(0xFF0284C7) : const Color(0xFF475569),
-                  letterSpacing: -0.1,
-                ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              'Add',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+                color: isSelected ? const Color(0xFF0284C7) : const Color(0xFF475569),
+                letterSpacing: -0.1,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
