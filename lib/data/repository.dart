@@ -125,18 +125,46 @@ $where GROUP BY s.id ORDER BY s.shop_name COLLATE NOCASE''', where.isEmpty ? nul
   }
 
   // ----------------------------------------------------------- collections
-  /// #000001 style, based on the AUTOINCREMENT counter so deleted numbers are never re-used.
+  /// Computes the next receipt number by finding the highest existing sequence in collections
+  /// and preserving its prefix and padding (e.g. #14000 automatically continues as #14001).
   Future<String> nextReceiptNumber() async {
     final d = await _db;
+    final rows = await d.rawQuery('SELECT receipt_number FROM collections');
+
+    int maxNum = 0;
+    String prefix = '#';
+    int padLength = 6;
+
+    for (final row in rows) {
+      final r = (row['receipt_number'] as String?)?.trim();
+      if (r == null || r.isEmpty) continue;
+      final match = RegExp(r'^(.*?)(\d+)$').firstMatch(r);
+      if (match != null) {
+        final p = match.group(1) ?? '#';
+        final digitsStr = match.group(2)!;
+        final val = int.tryParse(digitsStr);
+        if (val != null && val > maxNum) {
+          maxNum = val;
+          prefix = p;
+          padLength = digitsStr.length;
+        }
+      }
+    }
+
+    // Also consider sqlite_sequence as a baseline fallback
     final seq = Sqflite.firstIntValue(await d.rawQuery("SELECT seq FROM sqlite_sequence WHERE name='collections'")) ?? 0;
-    final count = Sqflite.firstIntValue(await d.rawQuery("SELECT COUNT(*) FROM collections")) ?? 0;
-    var n = count == 0 ? 1 : seq + 1;
-    if (n <= 0) n = 1;
+    if (seq > maxNum) {
+      maxNum = seq;
+    }
+
+    var nextNum = maxNum + 1;
+    if (nextNum <= 0) nextNum = 1;
+
     while (true) {
-      final candidate = '#${n.toString().padLeft(6, '0')}';
+      final candidate = '$prefix${nextNum.toString().padLeft(padLength, '0')}';
       final hit = await d.query('collections', columns: ['id'], where: 'receipt_number = ?', whereArgs: [candidate], limit: 1);
       if (hit.isEmpty) return candidate;
-      n++;
+      nextNum++;
     }
   }
 
