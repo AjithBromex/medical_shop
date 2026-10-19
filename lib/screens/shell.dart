@@ -178,7 +178,7 @@ class ShellState extends State<Shell> {
               title: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 180),
                 child: _index == 0
-                    ? Image.asset('assets/logo.png', height: 28, fit: BoxFit.contain, key: const ValueKey('app_logo'))
+                    ? Image.asset('assets/logo.png', height: 32, fit: BoxFit.contain, key: const ValueKey('app_logo'))
                     : Text(
                         dest.label,
                         key: ValueKey(dest.label),
@@ -598,7 +598,7 @@ class _SideNav extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
                 child: Image.asset(
                   'assets/logo.png',
-                  height: 38,
+                  height: 44,
                   fit: BoxFit.contain,
                 ),
               ),
