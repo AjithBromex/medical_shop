@@ -12,6 +12,13 @@ class MongoDatabase {
   static final MongoDatabase instance = MongoDatabase._();
   MongoDatabase._();
 
+  static int _asInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse('$v') ?? 0;
+  }
+
   // ------------------------------------------------------------- Two-way Sync (Local SQLite <-> Backend / Atlas)
   Future<void> syncAtlasToLocal() async {
     try {
@@ -106,10 +113,10 @@ class MongoDatabase {
           cDate = isoDate(DateTime.now());
         }
 
-        final cash = (c['cash'] ?? c['cash_amount'] ?? 0) as int;
-        final gpay = (c['gpay'] ?? c['gpay_amount'] ?? 0) as int;
-        final cheque = (c['cheque'] ?? c['cheque_amount'] ?? 0) as int;
-        final total = (c['total'] ?? c['total_amount'] ?? (cash + gpay + cheque)) as int;
+        final cash = _asInt(c['cash'] ?? c['cash_amount']);
+        final gpay = _asInt(c['gpay'] ?? c['gpay_amount']);
+        final cheque = _asInt(c['cheque'] ?? c['cheque_amount']);
+        final total = _asInt(c['total'] ?? c['total_amount'] ?? (cash + gpay + cheque));
         final notes = (c['notes'] ?? '').toString();
 
         final existing = await localDb.query('collections', where: 'receipt_number = ?', whereArgs: [rNo]);
@@ -166,7 +173,7 @@ class MongoDatabase {
           eDate = isoDate(DateTime.now());
         }
 
-        final amount = (e['amount'] ?? 0) as int;
+        final amount = _asInt(e['amount']);
         final desc = (e['description'] ?? '').toString();
         final notes = (e['notes'] ?? '').toString();
 
