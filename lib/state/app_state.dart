@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 
+import '../data/api_service.dart';
 import '../data/mongo_database.dart';
 import '../data/repository.dart';
+import '../data/sync_queue.dart';
 
-/// Session + a `revision` counter. Every screen watches `revision`, so any save / edit / delete
+/// Session + a `revision` counter + sync state. Every screen watches `revision`, so any save / edit / delete
 /// refreshes every total and chart automatically (nothing is stored twice).
 class AppState extends ChangeNotifier {
   final Repository repo = Repository.instance;
@@ -13,21 +15,50 @@ class AppState extends ChangeNotifier {
   bool ready = false;
   int revision = 0;
 
+  bool isSyncing = false;
+  int pendingSyncCount = 0;
+  bool isOnline = true;
+
   int _fails = 0;
   DateTime? _firstFail;
   static const maxFails = 5;
   static const lockSeconds = 300;
 
   Future<void> init() async {
+    await ApiService.instance.init();
     needsSetup = !await repo.hasAdmin();
     ready = true;
     notifyListeners();
 
-    // Sync cloud data from MongoDB Atlas in background
-    MongoDatabase.instance.syncAtlasToLocal().then((_) {
+    // Start background queue manager
+    SyncQueueManager.instance.startAutoSync();
+    await updatePendingCount();
+
+    // Sync cloud data from MongoDB Atlas on startup
+    await triggerSync(silent: true);
+  }
+
+  Future<void> updatePendingCount() async {
+    pendingSyncCount = await SyncQueueManager.instance.getPendingCount();
+    notifyListeners();
+  }
+
+  Future<void> triggerSync({bool silent = false}) async {
+    if (isSyncing) return;
+    isSyncing = true;
+    if (!silent) notifyListeners();
+
+    try {
+      isOnline = await ApiService.instance.checkHealth();
+      await MongoDatabase.instance.syncAtlasToLocal();
+      pendingSyncCount = await SyncQueueManager.instance.getPendingCount();
+    } catch (_) {
+      isOnline = false;
+    } finally {
+      isSyncing = false;
       revision++;
       notifyListeners();
-    });
+    }
   }
 
   bool get locked {
@@ -71,6 +102,7 @@ class AppState extends ChangeNotifier {
   /// Call after any data change.
   void changed() {
     revision++;
+    updatePendingCount();
     notifyListeners();
   }
 }

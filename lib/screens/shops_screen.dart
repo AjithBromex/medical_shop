@@ -11,6 +11,7 @@ import '../data/mongo_database.dart';
 import '../data/repository.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/sync_status_widget.dart';
 
 
 /// Admin: manage shops, create / share / restore backups, optional sample data.
@@ -132,7 +133,19 @@ class _ShopsScreenState extends State<ShopsScreen> {
                               size: 22,
                             ),
                           ),
-                          title: Text(rows[i].shop.name, style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                          title: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  rows[i].shop.name,
+                                  style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              SyncItemBadge(isPending: rows[i].shop.isPendingSync),
+                            ],
+                          ),
                           subtitle: Text(
                             [
                               if (rows[i].shop.phone != null) rows[i].shop.phone!,
@@ -184,7 +197,13 @@ class _ShopsScreenState extends State<ShopsScreen> {
                   onPressed: _restore,
                   icon: Icons.restore,
                   accentColor: AppColors.gpay,
-                  child: const Text('Restore from backup'),
+                  child: const Text('Sync with Atlas'),
+                ),
+                GlassButton(
+                  onPressed: () => showConfigureServerDialog(context),
+                  icon: Icons.cloud_outlined,
+                  accentColor: AppColors.total,
+                  child: const Text('Cloud Server Settings'),
                 ),
               ]),
             ),

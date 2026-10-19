@@ -7,7 +7,18 @@ class MedicalShop {
   final String? phone;
   final String? notes;
   final bool isActive;
-  const MedicalShop({this.id, required this.name, this.address, this.phone, this.notes, this.isActive = true});
+  final String syncStatus;
+  const MedicalShop({
+    this.id,
+    required this.name,
+    this.address,
+    this.phone,
+    this.notes,
+    this.isActive = true,
+    this.syncStatus = 'synced',
+  });
+
+  bool get isPendingSync => syncStatus == 'pending';
 
   factory MedicalShop.fromMap(Map<String, Object?> m) => MedicalShop(
         id: m['id'] as int?,
@@ -16,6 +27,7 @@ class MedicalShop {
         phone: m['phone'] as String?,
         notes: m['notes'] as String?,
         isActive: (m['is_active'] as int) == 1,
+        syncStatus: (m['sync_status'] as String?) ?? 'synced',
       );
 
   Map<String, Object?> toMap() => {
@@ -25,6 +37,7 @@ class MedicalShop {
         'phone': phone,
         'notes': notes,
         'is_active': isActive ? 1 : 0,
+        'sync_status': syncStatus,
       };
 }
 
@@ -46,6 +59,7 @@ class Collection {
   final int cheque;
   final String? notes;
   final DateTime? createdAt;
+  final String syncStatus;
   const Collection({
     this.id,
     required this.receiptNumber,
@@ -57,9 +71,11 @@ class Collection {
     required this.cheque,
     this.notes,
     this.createdAt,
+    this.syncStatus = 'synced',
   });
 
   int get total => cash + gpay + cheque;
+  bool get isPendingSync => syncStatus == 'pending';
 
   factory Collection.fromMap(Map<String, Object?> m) => Collection(
         id: m['id'] as int?,
@@ -72,6 +88,7 @@ class Collection {
         cheque: m['cheque_amount'] as int,
         notes: m['notes'] as String?,
         createdAt: m['created_at'] == null ? null : DateTime.tryParse(m['created_at'] as String),
+        syncStatus: (m['sync_status'] as String?) ?? 'synced',
       );
 
   Map<String, Object?> toMap() => {
@@ -84,6 +101,7 @@ class Collection {
         'cheque_amount': cheque,
         'total_amount': total,
         'notes': notes,
+        'sync_status': syncStatus,
       };
 }
 
@@ -94,9 +112,19 @@ class Expense {
   final String description;
   final int amount;
   final String? notes;
-  const Expense({this.id, required this.date, required this.category, required this.description, required this.amount, this.notes});
+  final String syncStatus;
+  const Expense({
+    this.id,
+    required this.date,
+    required this.category,
+    required this.description,
+    required this.amount,
+    this.notes,
+    this.syncStatus = 'synced',
+  });
 
   String get displayId => 'EXP-${(id ?? 0).toString().padLeft(5, '0')}';
+  bool get isPendingSync => syncStatus == 'pending';
 
   factory Expense.fromMap(Map<String, Object?> m) => Expense(
         id: m['id'] as int?,
@@ -105,6 +133,7 @@ class Expense {
         description: m['description'] as String,
         amount: m['amount'] as int,
         notes: m['notes'] as String?,
+        syncStatus: (m['sync_status'] as String?) ?? 'synced',
       );
 
   Map<String, Object?> toMap() => {
@@ -114,6 +143,7 @@ class Expense {
         'description': description,
         'amount': amount,
         'notes': notes,
+        'sync_status': syncStatus,
       };
 }
 

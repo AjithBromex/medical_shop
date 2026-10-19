@@ -4,27 +4,65 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'models.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 class ApiService {
   static final ApiService instance = ApiService._();
   ApiService._();
 
+  static const String defaultHostedUrl = 'https://medical-shop-api.onrender.com/api';
+
   static String get defaultBaseUrl {
     const envUrl = String.fromEnvironment('API_BASE_URL');
     if (envUrl.isNotEmpty) return envUrl;
-    if (!kIsWeb && Platform.isAndroid) {
-      return 'http://10.0.2.2:5000/api';
-    }
-    return 'http://localhost:5000/api';
+    return defaultHostedUrl;
   }
 
-  late String baseUrl = defaultBaseUrl;
+  static String get defaultApiKey {
+    const envKey = String.fromEnvironment('API_KEY');
+    return envKey;
+  }
 
-  Map<String, String> get _headers => {'Content-Type': 'application/json'};
+  String _baseUrl = defaultBaseUrl;
+  String _apiKey = defaultApiKey;
+  bool _initialized = false;
+
+  String get baseUrl => _baseUrl;
+  String get apiKey => _apiKey;
+
+  Future<void> init() async {
+    if (_initialized) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedUrl = prefs.getString('server_api_url');
+      if (savedUrl != null && savedUrl.trim().isNotEmpty) {
+        _baseUrl = savedUrl.trim();
+      }
+      final savedKey = prefs.getString('server_api_key');
+      if (savedKey != null && savedKey.trim().isNotEmpty) {
+        _apiKey = savedKey.trim();
+      }
+    } catch (_) {}
+    _initialized = true;
+  }
+
+  Future<void> updateConfig({required String newUrl, String? newApiKey}) async {
+    _baseUrl = newUrl.trim();
+    if (newApiKey != null) _apiKey = newApiKey.trim();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('server_api_url', _baseUrl);
+    await prefs.setString('server_api_key', _apiKey);
+  }
+
+  Map<String, String> get _headers => {
+        'Content-Type': 'application/json',
+        if (_apiKey.isNotEmpty) 'x-api-key': _apiKey,
+      };
 
   // ------------------------------------------------------------- Health
   Future<bool> checkHealth() async {
     try {
-      final healthUri = Uri.parse(baseUrl.replaceAll(RegExp(r'/api/?$'), '') + '/health');
+      final healthUri = Uri.parse(_baseUrl.replaceAll(RegExp(r'/api/?$'), '') + '/health');
       final res = await http.get(healthUri).timeout(const Duration(seconds: 4));
       return res.statusCode == 200;
     } catch (_) {

@@ -12,6 +12,7 @@ import '../widgets/filter_bar.dart';
 import 'collection_form.dart';
 import 'receipt_screen.dart';
 import 'report_export.dart';
+import '../widgets/sync_status_widget.dart';
 
 const pageSize = 25;
 
@@ -94,7 +95,19 @@ class _CollectionHistoryState extends State<CollectionHistory> {
                       for (final c in h.rows) ...[
                         ListTile(
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReceiptScreen(collectionId: c.id!))),
-                          title: Text('${c.receiptNumber} · ${c.shopName}', style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          title: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${c.receiptNumber} · ${c.shopName}',
+                                  style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              SyncItemBadge(isPending: c.isPendingSync),
+                            ],
+                          ),
                           subtitle: Text(
                             '${dmy(c.date)}\nCash ${inr(c.cash)} · Gpay/cheque/CN ${inr(c.gpay + c.cheque)}'
                             '${c.notes == null ? '' : '\n${c.notes}'}',

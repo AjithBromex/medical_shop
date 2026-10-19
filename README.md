@@ -3,32 +3,83 @@
 A Flutter/Dart port of the Flask + SQLite web app. It runs **fully offline** on Android, iOS,
 Windows, macOS and Linux with a local SQLite database (sqflite).
 
-## Quick Start
+## Cloud Architecture & Multi-Device Sync
 
-### 1. Start the Backend (Connects securely to MongoDB Atlas)
-The Flutter app securely persists and syncs data to MongoDB Atlas through the Node.js Express backend API:
-```bash
-cd server
-cp .env.example .env     # Copy environment file
-# Edit .env and paste your MongoDB Atlas connection string:
-# MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/medical_shop?retryWrites=true&w=majority
-npm install
-npm start
-```
-The server runs on `http://localhost:5000` (health check: `http://localhost:5000/health`).
+The Flutter application stores all data permanently in **MongoDB Atlas** via an online hosted Node.js Express backend. It does **not** require your laptop to run or host anything once deployed.
 
-### 2. Run the Flutter App
-In the root directory:
-```bash
-flutter pub get
-flutter run
 ```
-*Note for Android Emulator:* The app automatically targets `http://10.0.2.2:5000/api` on Android emulators and `http://localhost:5000/api` on desktop and web. A custom base URL can also be passed at build/run time:
-```bash
-flutter run --dart-define=API_BASE_URL=http://your-server-ip:5000/api
+┌────────────────────────┐      ┌────────────────────────┐
+│  Device A (Phone/Web)  │      │  Device B (Laptop/Tab) │
+└───────────┬────────────┘      └───────────┬────────────┘
+            │   REST API + API Key          │   REST API + API Key
+            └───────────────┬───────────────┘
+                            ▼
+              ┌───────────────────────────┐
+              │ Hosted Backend API        │
+              │ (Render / Railway / Cloud)│
+              └─────────────┬─────────────┘
+                            ▼
+              ┌───────────────────────────┐
+              │   MongoDB Atlas Database  │
+              └───────────────────────────┘
 ```
 
-### 3. Run Tests
+- **Online Saves:** Confirmed in the app only after the hosted backend saves them to MongoDB Atlas.
+- **Offline Durability:** When offline, changes are queued in a durable local SQLite table (`sync_queue`) and marked with an amber "Waiting to sync" badge.
+- **Auto Sync & Retry:** The background sync manager automatically retries pending changes when connectivity returns.
+- **Multi-Device Sync:** On app launch or refresh, latest records are pulled from Atlas so all devices stay in sync.
+
+---
+
+## 1. Deploy the Backend Online (Render.com - Free & No Laptop Needed)
+
+Deploy the backend to Render in a few clicks:
+
+1. Push your repository to your GitHub account:
+   ```bash
+   git push origin main
+   ```
+2. Log in to **[dashboard.render.com](https://dashboard.render.com/)**.
+3. Click **New +** > **Web Service**.
+4. Connect your GitHub repository (`AjithBromex/medical_shop`).
+5. Configure the service:
+   - **Name:** `medical-shop-api` (or your preferred name)
+   - **Root Directory:** `server`
+   - **Environment:** `Node`
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+6. Under **Environment Variables**, add:
+   - `MONGODB_URI`: Your MongoDB Atlas connection string (e.g. `mongodb+srv://<user>:<password>@<cluster>.mongodb.net/medical_shop?retryWrites=true&w=majority`)
+   - `API_KEY`: A strong secret key of your choice (e.g. `my_secret_token_123`)
+7. Click **Deploy Web Service**.
+8. Once deployed, copy your public URL (e.g., `https://medical-shop-api.onrender.com`).
+   Your API endpoint is: `https://medical-shop-api.onrender.com/api`.
+
+---
+
+## 2. Configure & Run the Flutter App
+
+You can connect any phone, tablet, or PC to your online backend:
+
+### Option A: In-App Configuration (Easiest - No Rebuild Needed)
+1. Launch the app on your phone, tablet, or PC.
+2. Tap the **Cloud icon** in the top bar (or go to **Admin - Medical Shops** > **Cloud Server Settings**).
+3. Enter your hosted backend API URL (e.g., `https://medical-shop-api.onrender.com/api`) and your `API_KEY`.
+4. Tap **Save & Connect**. Your app immediately links to your cloud database!
+
+### Option B: Build with Compile-time Flags
+```bash
+flutter run --dart-define=API_BASE_URL=https://medical-shop-api.onrender.com/api --dart-define=API_KEY=my_secret_token_123
+```
+
+To build a release APK for your Android phone:
+```bash
+flutter build apk --dart-define=API_BASE_URL=https://medical-shop-api.onrender.com/api --dart-define=API_KEY=my_secret_token_123
+```
+
+---
+
+## 3. Run Tests
 ```bash
 flutter test
 ```

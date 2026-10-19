@@ -13,6 +13,7 @@ import '../widgets/common.dart';
 import '../widgets/filter_bar.dart';
 import 'collection_history.dart' show pageSize;
 import 'report_export.dart';
+import '../widgets/sync_status_widget.dart';
 
 class _E {
   final List<Expense> rows;
@@ -193,7 +194,19 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     : Column(children: [
                         for (var i = 0; i < e.rows.length; i++) ...[
                           ListTile(
-                            title: Text(e.rows[i].category, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    e.rows[i].category,
+                                    style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                SyncItemBadge(isPending: e.rows[i].isPendingSync),
+                              ],
+                            ),
                             subtitle: Text(
                               '${e.rows[i].displayId} · ${dmy(e.rows[i].date)}${e.rows[i].notes == null ? '' : '\n${e.rows[i].notes}'}',
                               style: const TextStyle(color: AppColors.textSecondary),

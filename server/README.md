@@ -14,11 +14,28 @@ A REST API backend connected to MongoDB Atlas for the Oscar Pharma Medical Shop 
    ```
 
 2. **Verify `.env` configuration**:
-   Ensure `server/.env` contains your MongoDB Atlas connection string (copy from `.env.example`):
+   Ensure `server/.env` contains your MongoDB Atlas connection string and an optional `API_KEY` (copy from `.env.example`):
    ```env
    PORT=5000
    MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/medical_shop?retryWrites=true&w=majority
+   API_KEY=your_secret_api_key_here
    ```
+
+---
+
+## Cloud Hosting (Render / Railway / Docker)
+
+To run the backend online so your laptop does not need to host it:
+
+### Deploy to Render.com (Recommended)
+1. Push your repository to GitHub.
+2. On Render.com, create a **New Web Service** pointing to your repo.
+3. Set **Root Directory** to `server`.
+4. Add environment variables:
+   - `MONGODB_URI`: `<your-atlas-connection-string>`
+   - `API_KEY`: `<your-secret-api-key>`
+5. Deploy! Render will give you a public URL (e.g. `https://medical-shop-api.onrender.com`).
+   Your API base URL is: `https://medical-shop-api.onrender.com/api`.
 
 3. **Install dependencies**:
    ```bash

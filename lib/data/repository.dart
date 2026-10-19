@@ -96,19 +96,19 @@ $where GROUP BY s.id ORDER BY s.shop_name COLLATE NOCASE''', where.isEmpty ? nul
         whereArgs: s.id == null ? [s.name] : [s.name, s.id]);
     if (dup.isNotEmpty) throw RuleException('A shop named “${s.name}” already exists.');
     if (s.id == null) {
-      final id = await d.insert('medical_shops', s.toMap());
-      final saved = MedicalShop(id: id, name: s.name, address: s.address, phone: s.phone, notes: s.notes, isActive: s.isActive);
-      MongoDatabase.instance.upsertShop(saved);
+      final id = await d.insert('medical_shops', {...s.toMap(), 'sync_status': 'pending'});
+      final saved = MedicalShop(id: id, name: s.name, address: s.address, phone: s.phone, notes: s.notes, isActive: s.isActive, syncStatus: 'pending');
+      await MongoDatabase.instance.upsertShop(saved);
     } else {
-      await d.update('medical_shops', s.toMap(), where: 'id = ?', whereArgs: [s.id]);
-      MongoDatabase.instance.upsertShop(s);
+      await d.update('medical_shops', {...s.toMap(), 'sync_status': 'pending'}, where: 'id = ?', whereArgs: [s.id]);
+      await MongoDatabase.instance.upsertShop(s);
     }
   }
 
   Future<void> toggleShop(MedicalShop s) async {
     final newActive = !s.isActive;
-    await (await _db).update('medical_shops', {'is_active': newActive ? 1 : 0}, where: 'id = ?', whereArgs: [s.id]);
-    MongoDatabase.instance.upsertShop(MedicalShop(id: s.id, name: s.name, address: s.address, phone: s.phone, notes: s.notes, isActive: newActive));
+    await (await _db).update('medical_shops', {'is_active': newActive ? 1 : 0, 'sync_status': 'pending'}, where: 'id = ?', whereArgs: [s.id]);
+    await MongoDatabase.instance.upsertShop(MedicalShop(id: s.id, name: s.name, address: s.address, phone: s.phone, notes: s.notes, isActive: newActive, syncStatus: 'pending'));
   }
 
   Future<void> deleteShop(int id) async {
@@ -177,14 +177,14 @@ $where GROUP BY s.id ORDER BY s.shop_name COLLATE NOCASE''', where.isEmpty ? nul
     try {
       int id;
       if (c.id == null) {
-        id = await d.insert('collections', c.toMap(), conflictAlgorithm: ConflictAlgorithm.abort);
+        id = await d.insert('collections', {...c.toMap(), 'sync_status': 'pending'}, conflictAlgorithm: ConflictAlgorithm.abort);
       } else {
-        await d.update('collections', {...c.toMap(), 'updated_at': DateTime.now().toIso8601String()},
+        await d.update('collections', {...c.toMap(), 'sync_status': 'pending', 'updated_at': DateTime.now().toIso8601String()},
             where: 'id = ?', whereArgs: [c.id]);
         id = c.id!;
       }
       final saved = await collectionById(id) ?? c;
-      MongoDatabase.instance.upsertCollection(saved);
+      await MongoDatabase.instance.upsertCollection(saved);
       return id;
     } on DatabaseException catch (e) {
       if (e.toString().contains('UNIQUE')) throw RuleException('That receipt number already exists.');
@@ -321,14 +321,14 @@ FROM collections c JOIN medical_shops s ON s.id = c.medical_shop_id ${w.where}''
     final d = await _db;
     int id;
     if (e.id == null) {
-      id = await d.insert('expenses', e.toMap());
+      id = await d.insert('expenses', {...e.toMap(), 'sync_status': 'pending'});
     } else {
-      await d.update('expenses', {...e.toMap(), 'updated_at': DateTime.now().toIso8601String()},
+      await d.update('expenses', {...e.toMap(), 'sync_status': 'pending', 'updated_at': DateTime.now().toIso8601String()},
           where: 'id = ?', whereArgs: [e.id]);
       id = e.id!;
     }
-    final saved = Expense(id: id, date: e.date, category: e.category, description: e.description, amount: e.amount, notes: e.notes);
-    MongoDatabase.instance.upsertExpense(saved);
+    final saved = Expense(id: id, date: e.date, category: e.category, description: e.description, amount: e.amount, notes: e.notes, syncStatus: 'pending');
+    await MongoDatabase.instance.upsertExpense(saved);
   }
 
   Future<void> deleteExpense(int id) async {

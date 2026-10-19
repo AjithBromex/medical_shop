@@ -49,8 +49,32 @@ class AppDatabase {
     final path = await dbPath;
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onConfigure: (d) async => d.execute('PRAGMA foreign_keys = ON'),
+      onUpgrade: (d, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          try {
+            await d.execute("ALTER TABLE medical_shops ADD COLUMN sync_status TEXT NOT NULL DEFAULT 'synced'");
+          } catch (_) {}
+          try {
+            await d.execute("ALTER TABLE collections ADD COLUMN sync_status TEXT NOT NULL DEFAULT 'synced'");
+          } catch (_) {}
+          try {
+            await d.execute("ALTER TABLE expenses ADD COLUMN sync_status TEXT NOT NULL DEFAULT 'synced'");
+          } catch (_) {}
+          await d.execute('''
+CREATE TABLE IF NOT EXISTS sync_queue (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  action TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  last_error TEXT
+)''');
+        }
+      },
       onCreate: (d, _) async {
         await d.execute('''
 CREATE TABLE medical_shops (
@@ -58,6 +82,7 @@ CREATE TABLE medical_shops (
   shop_name TEXT NOT NULL COLLATE NOCASE UNIQUE,
   address TEXT, phone TEXT, notes TEXT,
   is_active INTEGER NOT NULL DEFAULT 1,
+  sync_status TEXT NOT NULL DEFAULT 'synced',
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 )''');
         await d.execute('''
@@ -71,6 +96,7 @@ CREATE TABLE collections (
   cheque_amount INTEGER NOT NULL DEFAULT 0,
   total_amount INTEGER NOT NULL DEFAULT 0,
   notes TEXT,
+  sync_status TEXT NOT NULL DEFAULT 'synced',
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
   CONSTRAINT ck_collection_amounts_non_negative CHECK (cash_amount >= 0 AND gpay_amount >= 0 AND cheque_amount >= 0),
@@ -91,6 +117,7 @@ CREATE TABLE expenses (
   description TEXT NOT NULL,
   amount INTEGER NOT NULL,
   notes TEXT,
+  sync_status TEXT NOT NULL DEFAULT 'synced',
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
   CONSTRAINT ck_expense_amount_positive CHECK (amount > 0)
@@ -103,6 +130,17 @@ CREATE TABLE admin_users (
   password_hash TEXT NOT NULL,
   salt TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+)''');
+        await d.execute('''
+CREATE TABLE sync_queue (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  action TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  last_error TEXT
 )''');
         for (final c in defaultCategories) {
           await d.insert('expense_categories', {'name': c});

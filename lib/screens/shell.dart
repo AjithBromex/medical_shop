@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
+import '../widgets/sync_status_widget.dart';
 import 'analysis_screen.dart';
 import 'collection_form.dart';
 import 'collection_history.dart';
@@ -185,6 +186,7 @@ class ShellState extends State<Shell> {
                       ),
               ),
               actions: [
+                const SyncStatusHeaderButton(compact: true),
                 if (_index != 1)
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline, color: AppColors.total),
@@ -319,6 +321,8 @@ class ShellState extends State<Shell> {
                                 letterSpacing: -0.3,
                               ),
                             ),
+                            const Spacer(),
+                            const SyncStatusHeaderButton(),
                           ],
                         ),
                       ),

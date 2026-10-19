@@ -22,13 +22,27 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check endpoint
+// Health check endpoint (public, used by uptime monitors and hosting platforms)
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'Oscar Pharma Medical Shop Manager Backend',
     timestamp: new Date().toISOString(),
   });
+});
+
+// API Key Authentication Middleware
+const REQUIRED_API_KEY = process.env.API_KEY;
+app.use('/api', (req, res, next) => {
+  if (!REQUIRED_API_KEY) {
+    // If no API_KEY configured on server, allow for backward compatibility/local test
+    return next();
+  }
+  const clientKey = req.headers['x-api-key'] || (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '');
+  if (!clientKey || clientKey !== REQUIRED_API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid or missing API key' });
+  }
+  next();
 });
 
 // API Routes
