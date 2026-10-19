@@ -51,12 +51,22 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: GlassContainer(
-          blur: 24,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          color: Colors.white.withValues(alpha: 0.96),
-          border: Border.all(color: AppColors.border, width: 1.2),
-          child: _ExpenseForm(existing: existing, categories: categories),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x330F172A),
+                blurRadius: 24,
+                offset: Offset(0, -4),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: _ExpenseForm(existing: existing, categories: categories),
+          ),
         ),
       ),
     );
@@ -135,17 +145,46 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
               ),
             ),
             body: PageBody([
-              CardGrid([
-                StatCard('Today’s expenses', inr(e.todayTotal), Icons.receipt_long, AppColors.expenses),
-                StatCard(
-                  _f.isEmpty ? 'All expenses' : 'Filtered expenses',
-                  inr(rangeTotal),
-                  Icons.account_balance_wallet_outlined,
-                  AppColors.expenses,
-                  sub: '${e.count} entries',
-                ),
-              ], minWidth: 280),
+              // 1. Hero Expense Card
+              HeroStatCard(
+                amount: inr(e.todayTotal),
+                title: 'Today’s expenses',
+                subtext: 'Recorded today (${dmy(today())})',
+                icon: Icons.receipt_long_outlined,
+                gradientColors: const [Color(0xFF881337), Color(0xFFE11D48)],
+                badgeText: 'TODAY’S\nEXPENSES',
+              ),
               const SizedBox(height: 12),
+
+              // 2. Stats Row
+              Row(
+                children: [
+                  Expanded(
+                    child: MiniStatCard(
+                      label: _f.isEmpty ? 'All expenses' : 'Filtered total',
+                      value: inr(rangeTotal),
+                      icon: Icons.account_balance_wallet_outlined,
+                      iconColor: const Color(0xFFF43F5E),
+                      iconBg: const Color(0xFFFFE4E6),
+                      sub: '${e.count} entries',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: MiniStatCard(
+                      label: 'Categories',
+                      value: '${e.cats.length}',
+                      icon: Icons.category_outlined,
+                      iconColor: const Color(0xFF8B5CF6),
+                      iconBg: const Color(0xFFF3E8FF),
+                      sub: 'Active types',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // 3. Filters & Action Bar
               FilterBar(
                 value: _f,
                 showCategory: true,
@@ -154,28 +193,34 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 onChanged: (f) => setState(() { _f = f; _page = 1; }),
               ),
               const SizedBox(height: 10),
-              Wrap(spacing: 10, children: [
+              Wrap(spacing: 8, runSpacing: 8, children: [
                 GlassButton(
                   onPressed: _addCategory,
-                  icon: Icons.label_outline,
+                  icon: Icons.add_circle_outline,
                   accentColor: AppColors.total,
-                  child: const Text('New category'),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: const Text('New category', style: TextStyle(fontSize: 12.5)),
                 ),
                 GlassButton(
                   onPressed: () => exportReportPdf(context, 'expenses', _f),
                   icon: Icons.picture_as_pdf_outlined,
-                  accentColor: AppColors.total,
+                  accentColor: const Color(0xFFE11D48),
                   isPrimary: true,
-                  child: const Text('Export PDF'),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: const Text('Export PDF', style: TextStyle(fontSize: 12.5)),
                 ),
                 GlassButton(
                   onPressed: () => exportReport(context, 'expenses', _f),
                   icon: Icons.table_chart_outlined,
                   accentColor: AppColors.cash,
-                  child: const Text('Export CSV'),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: const Text('Export CSV', style: TextStyle(fontSize: 12.5)),
                 ),
               ]),
+
+              // 4. Category Breakdown Chart
               if (e.cats.isNotEmpty) ...[
+                const SizedBox(height: 8),
                 const SectionTitle('By category'),
                 GlassCard(
                   padding: const EdgeInsets.all(16),
@@ -186,60 +231,119 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   ),
                 ),
               ],
-              const SectionTitle('Expenses'),
-              GlassCard(
-                padding: EdgeInsets.zero,
-                child: e.rows.isEmpty
-                    ? const EmptyState('No expenses match these filters.', icon: Icons.receipt_long)
-                    : Column(children: [
-                        for (var i = 0; i < e.rows.length; i++) ...[
-                          ListTile(
-                            title: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    e.rows[i].category,
-                                    style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+
+              // 5. Expenses List
+              const SizedBox(height: 8),
+              const SectionTitle('Expenses list'),
+              const SizedBox(height: 10),
+              if (e.rows.isEmpty)
+                const GlassCard(
+                  child: EmptyState('No expenses match these filters.', icon: Icons.receipt_long),
+                )
+              else
+                GlassCard(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < e.rows.length; i++) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFE4E6),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                const SizedBox(width: 8),
-                                SyncItemBadge(isPending: e.rows[i].isPendingSync),
-                              ],
-                            ),
-                            subtitle: Text(
-                              '${e.rows[i].displayId} · ${dmy(e.rows[i].date)}${e.rows[i].notes == null ? '' : '\n${e.rows[i].notes}'}',
-                              style: const TextStyle(color: AppColors.textSecondary),
-                            ),
-                            isThreeLine: e.rows[i].notes != null,
-                            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                              Text(inr(e.rows[i].amount), style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.expenses, fontSize: 15)),
-                              PopupMenuButton<String>(
-                                iconColor: AppColors.textSecondary,
-                                onSelected: (v) async {
-                                  if (v == 'edit') {
-                                    _openForm(existing: e.rows[i], categories: e.categories);
-                                  } else {
-                                    await showConfirmDelete(context, 'expense ${e.rows[i].displayId}', () async {
-                                      await Repository.instance.deleteExpense(e.rows[i].id!);
-                                      if (context.mounted) {
-                                        context.read<AppState>().changed();
-                                        toast(context, 'Expense ${e.rows[i].displayId} deleted.');
+                                child: const Icon(Icons.receipt_outlined, color: Color(0xFFF43F5E), size: 22),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            e.rows[i].category,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14.5,
+                                              color: Color(0xFF0F172A),
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        SyncItemBadge(isPending: e.rows[i].isPendingSync),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${e.rows[i].displayId} • ${dmy(e.rows[i].date)}',
+                                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 12.5, fontWeight: FontWeight.w500),
+                                    ),
+                                    if (e.rows[i].notes != null && e.rows[i].notes!.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        e.rows[i].notes!,
+                                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5, fontStyle: FontStyle.italic),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    inr(e.rows[i].amount),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFFE11D48),
+                                      fontSize: 16,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  PopupMenuButton<String>(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    icon: const Icon(Icons.more_vert, size: 20, color: Color(0xFF64748B)),
+                                    onSelected: (v) async {
+                                      if (v == 'edit') {
+                                        _openForm(existing: e.rows[i], categories: e.categories);
+                                      } else {
+                                        await showConfirmDelete(context, 'expense ${e.rows[i].displayId}', () async {
+                                          await Repository.instance.deleteExpense(e.rows[i].id!);
+                                          if (context.mounted) {
+                                            context.read<AppState>().changed();
+                                            toast(context, 'Expense ${e.rows[i].displayId} deleted.');
+                                          }
+                                        });
                                       }
-                                    });
-                                  }
-                                },
-                                itemBuilder: (_) => const [
-                                  PopupMenuItem(value: 'edit', child: Text('Edit')),
-                                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                                    },
+                                    itemBuilder: (_) => const [
+                                      PopupMenuItem(value: 'edit', child: Text('Edit')),
+                                      PopupMenuItem(value: 'delete', child: Text('Delete')),
+                                    ],
+                                  ),
                                 ],
                               ),
-                            ]),
+                            ],
                           ),
-                          if (i < e.rows.length - 1) Divider(height: 1, color: Colors.white.withValues(alpha: 0.08)),
-                        ],
-                      ]),
-              ),
+                        ),
+                        if (i < e.rows.length - 1)
+                          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                      ],
+                    ],
+                  ),
+                ),
               Pager(page: _page, pages: pages, onPage: (p) => setState(() => _page = p)),
               const SizedBox(height: 80),
             ]),
@@ -317,20 +421,28 @@ class _ExpenseFormState extends State<_ExpenseForm> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Center(
           child: Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(2)),
+            width: 44,
+            height: 4.5,
+            margin: const EdgeInsets.only(bottom: 20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFCBD5E1),
+              borderRadius: BorderRadius.circular(3),
+            ),
           ),
         ),
         Text(
           widget.existing == null ? 'Add expense' : 'Edit ${widget.existing!.displayId}',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF0F172A),
+            letterSpacing: -0.3,
+          ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         ErrorBox(_errors),
         DateField(label: 'Expense date', value: _date, onChanged: (d) => setState(() => _date = d ?? _date)),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         DropdownButtonFormField<String>(
           initialValue: cats.contains(_category) ? _category : null,
           dropdownColor: Colors.white,
@@ -338,26 +450,29 @@ class _ExpenseFormState extends State<_ExpenseForm> {
           items: [for (final c in cats) DropdownMenuItem(value: c, child: Text(c))],
           onChanged: (v) => setState(() => _category = v),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         TextField(
           controller: _amount,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: const InputDecoration(labelText: 'Amount', prefixText: '₹ ', prefixIcon: Icon(Icons.currency_rupee, color: AppColors.expenses)),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         TextField(controller: _notes, maxLines: 2, maxLength: 500, decoration: const InputDecoration(labelText: 'Notes (optional)', prefixIcon: Icon(Icons.notes_outlined))),
-        const SizedBox(height: 12),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.expenses,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          onPressed: _saving ? null : _save,
-          child: Text(
-            widget.existing == null ? 'Save expense' : 'Update expense',
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+        const SizedBox(height: 18),
+        SizedBox(
+          height: 50,
+          child: FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFE11D48),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 2,
+            ),
+            onPressed: _saving ? null : _save,
+            child: Text(
+              widget.existing == null ? 'Save expense' : 'Update expense',
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
           ),
         ),
       ]),

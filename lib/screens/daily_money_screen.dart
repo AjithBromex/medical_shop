@@ -47,50 +47,165 @@ class _DailyMoneyScreenState extends State<DailyMoneyScreen> {
           final rangeExp = d.history.fold<int>(0, (s, r) => s + r.expenses);
           return PageBody([
             Center(child: DayNav(day: _day, onChanged: (x) => setState(() => _day = x))),
-            const SizedBox(height: 8),
-            CardGrid([
-              StatCard('Cash', inr(d.t.cash), Icons.payments, AppColors.cash),
-              StatCard('Gpay/cheque/CN', inr(d.t.gpay + d.t.cheque), Icons.account_balance, AppColors.gpay),
-              StatCard('Total collection', inr(d.t.total), Icons.monetization_on_outlined, AppColors.total, sub: '${d.t.count} transactions'),
-              StatCard('Total expenses', inr(d.expenses), Icons.receipt_long, AppColors.expenses),
-              StatCard('Remaining cash', inr(d.t.cash - d.expenses), Icons.account_balance_wallet_outlined,
-                  d.t.cash - d.expenses >= 0 ? AppColors.cash : AppColors.expenses,
-                  sub: 'Cash − expenses'),
-              StatCard('Total remaining', inr(d.remaining), Icons.savings_outlined, d.remaining >= 0 ? AppColors.cash : AppColors.expenses,
-                  sub: '${inr(d.t.total)} − ${inr(d.expenses)}'),
-            ]),
+            const SizedBox(height: 12),
+
+            // 1. Hero Banner: Remaining Cash
+            HeroStatCard(
+              amount: inr(d.t.cash - d.expenses),
+              title: 'Remaining cash',
+              subtext: 'Cash (${inr(d.t.cash)}) − Expenses (${inr(d.expenses)})',
+              badgeText: 'CURRENT\nBALANCE',
+            ),
+            const SizedBox(height: 12),
+
+            // 2. Row of 2: Cash & Gpay/cheque/CN
+            Row(
+              children: [
+                Expanded(
+                  child: MiniStatCard(
+                    label: 'Cash collection',
+                    value: inr(d.t.cash),
+                    icon: Icons.payments_outlined,
+                    iconColor: const Color(0xFF10B981),
+                    iconBg: const Color(0xFFE8F5E9),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: MiniStatCard(
+                    label: 'Gpay/cheque/CN',
+                    value: inr(d.t.gpay + d.t.cheque),
+                    icon: Icons.account_balance_outlined,
+                    iconColor: const Color(0xFF3B82F6),
+                    iconBg: const Color(0xFFEFF6FF),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // 3. Full Width: Total Collection
+            WideStatCard(
+              label: 'Total collection',
+              value: inr(d.t.total),
+              sub: '${d.t.count} transaction${d.t.count == 1 ? '' : 's'}',
+              icon: Icons.monetization_on_outlined,
+              iconColor: const Color(0xFF0284C7),
+              iconBg: const Color(0xFFE0F2FE),
+            ),
+            const SizedBox(height: 12),
+
+            // 4. Row of 2: Total expenses & Total remaining
+            Row(
+              children: [
+                Expanded(
+                  child: MiniStatCard(
+                    label: 'Total expenses',
+                    value: inr(d.expenses),
+                    icon: Icons.confirmation_number_outlined,
+                    iconColor: const Color(0xFFF43F5E),
+                    iconBg: const Color(0xFFFFE4E6),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: MiniStatCard(
+                    label: 'Total remaining',
+                    value: inr(d.remaining),
+                    sub: 'Total − expenses',
+                    icon: Icons.savings_outlined,
+                    iconColor: const Color(0xFF10B981),
+                    iconBg: const Color(0xFFE8F5E9),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+
             if (d.cats.isNotEmpty) ...[
-              const SectionTitle('Expenses on this day (information only)'),
+              const SectionTitle('Expenses on this day'),
+              const SizedBox(height: 10),
               GlassCard(
                 padding: EdgeInsets.zero,
                 child: Column(children: [
                   for (var i = 0; i < d.cats.length; i++) ...[
                     ListTile(
                       dense: true,
-                      title: Text(d.cats[i].category, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                      subtitle: Text('${d.cats[i].count} entr${d.cats[i].count == 1 ? 'y' : 'ies'}', style: const TextStyle(color: AppColors.textSecondary)),
-                      trailing: Text(inr(d.cats[i].total), style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.expenses)),
+                      leading: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFE4E6),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.receipt_outlined, color: Color(0xFFF43F5E), size: 18),
+                      ),
+                      title: Text(d.cats[i].category, style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
+                      subtitle: Text('${d.cats[i].count} entr${d.cats[i].count == 1 ? 'y' : 'ies'}', style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                      trailing: Text(inr(d.cats[i].total), style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFFE11D48), fontSize: 15)),
                     ),
-                    if (i < d.cats.length - 1) Divider(height: 1, color: Colors.white.withValues(alpha: 0.08)),
+                    if (i < d.cats.length - 1) const Divider(height: 1, color: Color(0xFFE2E8F0)),
                   ],
                 ]),
               ),
+              const SizedBox(height: 18),
             ],
+
             const SectionTitle('Daily history'),
+            const SizedBox(height: 10),
             GlassCard(
-              padding: const EdgeInsets.all(14),
-              child: Wrap(spacing: 12, runSpacing: 12, children: [
-                SizedBox(width: 200, child: DateField(label: 'From', value: _from, onChanged: (v) => setState(() => _from = v ?? _from))),
-                SizedBox(width: 200, child: DateField(label: 'To', value: _to, onChanged: (v) => setState(() => _to = v ?? _to))),
-              ]),
+              padding: const EdgeInsets.all(16),
+              child: LayoutBuilder(builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 500;
+                if (isWide) {
+                  return Row(children: [
+                    Expanded(child: DateField(label: 'From', value: _from, onChanged: (v) => setState(() => _from = v ?? _from))),
+                    const SizedBox(width: 14),
+                    Expanded(child: DateField(label: 'To', value: _to, onChanged: (v) => setState(() => _to = v ?? _to))),
+                  ]);
+                } else {
+                  return Column(children: [
+                    DateField(label: 'From', value: _from, onChanged: (v) => setState(() => _from = v ?? _from)),
+                    const SizedBox(height: 12),
+                    DateField(label: 'To', value: _to, onChanged: (v) => setState(() => _to = v ?? _to)),
+                  ]);
+                }
+              }),
             ),
             const SizedBox(height: 12),
-            CardGrid([
-              StatCard('Range collection', inr(rangeTotal), Icons.monetization_on_outlined, AppColors.total),
-              StatCard('Range expenses', inr(rangeExp), Icons.receipt_long, AppColors.expenses),
-              StatCard('Range remaining', inr(rangeTotal - rangeExp), Icons.savings_outlined, rangeTotal - rangeExp >= 0 ? AppColors.cash : AppColors.expenses),
-            ], minWidth: 240),
+            Row(
+              children: [
+                Expanded(
+                  child: MiniStatCard(
+                    label: 'Range collection',
+                    value: inr(rangeTotal),
+                    icon: Icons.monetization_on_outlined,
+                    iconColor: const Color(0xFF0284C7),
+                    iconBg: const Color(0xFFE0F2FE),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: MiniStatCard(
+                    label: 'Range expenses',
+                    value: inr(rangeExp),
+                    icon: Icons.confirmation_number_outlined,
+                    iconColor: const Color(0xFFF43F5E),
+                    iconBg: const Color(0xFFFFE4E6),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
+            WideStatCard(
+              label: 'Range remaining',
+              value: inr(rangeTotal - rangeExp),
+              sub: 'Total collection − Total expenses',
+              icon: Icons.savings_outlined,
+              iconColor: rangeTotal - rangeExp >= 0 ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
+              iconBg: rangeTotal - rangeExp >= 0 ? const Color(0xFFE8F5E9) : const Color(0xFFFFE4E6),
+            ),
+            const SizedBox(height: 16),
             GlassCard(
               padding: const EdgeInsets.all(16),
               child: asc.isEmpty

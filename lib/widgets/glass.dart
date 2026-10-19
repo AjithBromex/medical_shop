@@ -22,8 +22,8 @@ class GlassContainer extends StatelessWidget {
   const GlassContainer({
     super.key,
     required this.child,
-    this.blur = 16.0,
-    this.borderRadius = const BorderRadius.all(Radius.circular(16)),
+    this.blur = 0.0,
+    this.borderRadius = const BorderRadius.all(Radius.circular(18)),
     this.padding,
     this.margin,
     this.gradient,
@@ -42,16 +42,8 @@ class GlassContainer extends StatelessWidget {
       height: height,
       padding: padding,
       decoration: BoxDecoration(
-        color: color ?? (gradient == null ? Colors.white.withValues(alpha: 0.95) : null),
-        gradient: gradient ??
-            const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFFFFFFF),
-                Color(0xFFFAFCFF),
-              ],
-            ),
+        color: color ?? (gradient == null ? Colors.white : null),
+        gradient: gradient,
         borderRadius: borderRadius,
         border: border ??
             Border.all(
@@ -59,16 +51,11 @@ class GlassContainer extends StatelessWidget {
               width: 1.2,
             ),
         boxShadow: boxShadow ??
-            [
+            const [
               BoxShadow(
-                color: const Color(0xFF0F172A).withValues(alpha: 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-              BoxShadow(
-                color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-                blurRadius: 4,
-                offset: const Offset(0, 1),
+                color: Color(0x0A0F172A),
+                blurRadius: 10,
+                offset: Offset(0, 3),
               ),
             ],
       ),
@@ -94,7 +81,7 @@ class GlassContainer extends StatelessWidget {
   }
 }
 
-/// A glassmorphic Card widget that replaces standard opaque Material Cards.
+/// A card widget with home page solid white 18px rounded styling.
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -111,8 +98,8 @@ class GlassCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.margin,
-    this.blur = 16.0,
-    this.borderRadius = 16.0,
+    this.blur = 0.0,
+    this.borderRadius = 18.0,
     this.color,
     this.gradient,
     this.border,

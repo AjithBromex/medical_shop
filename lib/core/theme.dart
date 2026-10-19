@@ -10,12 +10,12 @@ class AppColors {
   static const total = Color(0xFF0369A1);      // Deep Cyan Ocean
 
   // Canvas and borders
-  static const bgDark = Color(0xFFEDF2F7);     // Cool Slate Canvas
+  static const bgDark = Color(0xFFF8FAFC);     // Clean Slate-50 Canvas (matching home)
   static const bgSurface = Color(0xFFFFFFFF);  // Pure White Surface
   static const bgCard = Color(0xFFFFFFFF);     // White Card
   static const bgCardSolid = Color(0xFFFFFFFF);
-  static const border = Color(0xFFCBD5E1);     // Crisp Slate-300 Border (high visibility)
-  static const borderStrong = Color(0xFF94A3B8); // Slate-400 Border
+  static const border = Color(0xFFE2E8F0);     // Crisp Slate-200 Border (matching home)
+  static const borderStrong = Color(0xFFCBD5E1); // Slate-300 Border
 
   // Text tokens for light background
   static const textPrimary = Color(0xFF0F172A);   // Slate 900
@@ -53,16 +53,16 @@ ThemeData buildTheme() {
     scaffoldBackgroundColor: AppColors.bgDark,
     canvasColor: AppColors.bgDark,
     cardTheme: CardThemeData(
-      color: Colors.white.withValues(alpha: 0.85),
+      color: Colors.white,
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         side: const BorderSide(color: AppColors.border, width: 1.2),
       ),
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: Colors.white.withValues(alpha: 0.96),
+      backgroundColor: Colors.white,
       elevation: 16,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
@@ -75,17 +75,17 @@ ThemeData buildTheme() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.85),
+      fillColor: Colors.white,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: AppColors.border, width: 1.2),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: AppColors.border, width: 1.2),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: AppColors.total, width: 1.5),
       ),
       labelStyle: const TextStyle(color: AppColors.textSecondary),

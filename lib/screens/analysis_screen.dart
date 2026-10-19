@@ -27,12 +27,11 @@ class AnalysisScreen extends StatelessWidget {
                 dividerColor: Colors.transparent,
                 indicatorSize: TabBarIndicatorSize.tab,
                 indicator: BoxDecoration(
-                  color: AppColors.total.withValues(alpha: 0.14),
+                  color: const Color(0xFF0284C7),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.total.withValues(alpha: 0.4), width: 1.2),
                 ),
-                labelColor: AppColors.total,
-                unselectedLabelColor: AppColors.textSecondary,
+                labelColor: Colors.white,
+                unselectedLabelColor: const Color(0xFF64748B),
                 labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                 tabs: const [Tab(text: 'Today'), Tab(text: 'All dates')],
               ),
@@ -43,12 +42,42 @@ class AnalysisScreen extends StatelessWidget {
       );
 }
 
-Widget _totalsGrid(Totals t) => CardGrid([
-      StatCard('Cash', inr(t.cash), Icons.payments, AppColors.cash),
-      StatCard('Gpay/cheque/CN', inr(t.gpay + t.cheque), Icons.account_balance, AppColors.gpay),
-      StatCard('Total collection', inr(t.total), Icons.monetization_on_outlined, AppColors.total,
-          sub: '${t.count} transaction${t.count == 1 ? '' : 's'}'),
-    ], minWidth: 220);
+Widget _totalsGrid(Totals t) => Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: MiniStatCard(
+                label: 'Cash collection',
+                value: inr(t.cash),
+                icon: Icons.payments_outlined,
+                iconColor: const Color(0xFF10B981),
+                iconBg: const Color(0xFFE8F5E9),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: MiniStatCard(
+                label: 'Gpay/cheque/CN',
+                value: inr(t.gpay + t.cheque),
+                icon: Icons.account_balance_outlined,
+                iconColor: const Color(0xFF3B82F6),
+                iconBg: const Color(0xFFEFF6FF),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        WideStatCard(
+          label: 'Total collection',
+          value: inr(t.total),
+          sub: '${t.count} transaction${t.count == 1 ? '' : 's'}',
+          icon: Icons.monetization_on_outlined,
+          iconColor: const Color(0xFF0284C7),
+          iconBg: const Color(0xFFE0F2FE),
+        ),
+      ],
+    );
 
 Widget _shopChart(List<ShopBreakdown> rows) => rows.isEmpty
     ? const EmptyState('No collections for this selection.', icon: Icons.bar_chart)

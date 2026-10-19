@@ -231,210 +231,295 @@ class _CollectionFormState extends State<CollectionForm> {
 
     final body = PageBody([
       if (_shops.isEmpty)
-        GlassContainer(
+        Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(14),
-          color: AppColors.cheque.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.cheque.withValues(alpha: 0.4)),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF7ED),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFFDBA74), width: 1.2),
+          ),
           child: const Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: AppColors.cheque, size: 20),
-              SizedBox(width: 10),
+              Icon(Icons.warning_amber_rounded, color: Color(0xFFEA580C), size: 22),
+              SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'No active medical shops yet. Add one in Admin - Medical Shops first.',
-                  style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                  style: TextStyle(color: Color(0xFF9A3412), fontWeight: FontWeight.w600, fontSize: 13),
                 ),
               ),
             ],
           ),
         ),
       ErrorBox(_errors),
+
+      // 1. Hero Total Card
+      HeroStatCard(
+        amount: inr(total),
+        title: 'Total collection',
+        subtext: 'Cash: ${inr(_safe(_cash))}  •  Gpay/cheque/CN: ${inr(_safe(_gpayCheque))}',
+        icon: Icons.receipt_long_rounded,
+        badgeText: 'LIVE\nTOTAL',
+      ),
+      const SizedBox(height: 16),
+
+      // 2. Receipt Details Section
+      const SectionTitle('Receipt details'),
+      const SizedBox(height: 10),
       GlassCard(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Wrap(spacing: 12, runSpacing: 12, children: [
-              SizedBox(
-                width: 260,
-                child: TextField(
-                  controller: _receipt,
-                  decoration: const InputDecoration(labelText: 'Receipt number', prefixIcon: Icon(Icons.receipt_long_outlined)),
-                ),
-              ),
-              SizedBox(
-                width: 220,
-                child: DateField(label: 'Collection date', value: _date, onChanged: (d) => setState(() => _date = d ?? _date)),
-              ),
-              SizedBox(
-                width: 320,
-                child: RawAutocomplete<MedicalShop>(
-                  textEditingController: _shopSearch,
-                  focusNode: _shopFocus,
-                  optionsBuilder: (TextEditingValue textEditingValue) {
-                    final q = textEditingValue.text.trim().toLowerCase();
-                    if (q.isEmpty) return _shops;
-                    return _shops.where((s) => s.name.toLowerCase().contains(q));
-                  },
-                  displayStringForOption: (s) => s.name,
-                  onSelected: (s) {
-                    setState(() => _shopId = s.id);
-                  },
-                  fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                    return TextField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      decoration: InputDecoration(
-                        labelText: 'Search & choose shop',
-                        hintText: 'Type shop name...',
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: controller.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.close, size: 18),
-                                tooltip: 'Clear selection',
-                                splashRadius: 18,
-                                onPressed: () {
-                                  controller.clear();
-                                  setState(() => _shopId = null);
-                                },
-                              )
-                            : IconButton(
-                                icon: const Icon(Icons.arrow_drop_down),
-                                tooltip: 'Show all shops',
-                                splashRadius: 18,
-                                onPressed: () {
-                                  if (!focusNode.hasFocus) {
-                                    focusNode.requestFocus();
-                                  }
-                                },
-                              ),
+            LayoutBuilder(builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 500;
+              if (isWide) {
+                return Row(
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: TextField(
+                        controller: _receipt,
+                        decoration: const InputDecoration(
+                          labelText: 'Receipt number',
+                          prefixIcon: Icon(Icons.tag_rounded, color: AppColors.total),
+                        ),
                       ),
-                      onSubmitted: (_) => onFieldSubmitted(),
-                    );
-                  },
-                  optionsViewBuilder: (context, onSelected, options) {
-                    return Align(
-                      alignment: Alignment.topLeft,
-                      child: Material(
-                        elevation: 8,
-                        borderRadius: BorderRadius.circular(14),
-                        color: Colors.white,
-                        child: Container(
-                          width: 320,
-                          constraints: const BoxConstraints(maxHeight: 260),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AppColors.border, width: 1.2),
-                          ),
-                          child: ListView.builder(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            shrinkWrap: true,
-                            itemCount: options.length,
-                            itemBuilder: (context, index) {
-                              final s = options.elementAt(index);
-                              final isSelected = s.id == _shopId;
-                              return ListTile(
-                                dense: true,
-                                selected: isSelected,
-                                leading: Icon(
-                                  Icons.storefront_outlined,
-                                  size: 20,
-                                  color: isSelected ? AppColors.total : AppColors.textSecondary,
-                                ),
-                                title: Text(
-                                  s.name + (s.isActive ? '' : ' (inactive)'),
-                                  style: TextStyle(
-                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                    color: isSelected ? AppColors.total : AppColors.textPrimary,
-                                  ),
-                                ),
-                                onTap: () => onSelected(s),
-                              );
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      flex: 4,
+                      child: DateField(
+                        label: 'Collection date',
+                        value: _date,
+                        onChanged: (d) => setState(() => _date = d ?? _date),
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                return Column(
+                  children: [
+                    TextField(
+                      controller: _receipt,
+                      decoration: const InputDecoration(
+                        labelText: 'Receipt number',
+                        prefixIcon: Icon(Icons.tag_rounded, color: AppColors.total),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DateField(
+                      label: 'Collection date',
+                      value: _date,
+                      onChanged: (d) => setState(() => _date = d ?? _date),
+                    ),
+                  ],
+                );
+              }
+            }),
+            const SizedBox(height: 14),
+            RawAutocomplete<MedicalShop>(
+              textEditingController: _shopSearch,
+              focusNode: _shopFocus,
+              optionsBuilder: (TextEditingValue textEditingValue) {
+                final q = textEditingValue.text.trim().toLowerCase();
+                if (q.isEmpty) return _shops;
+                return _shops.where((s) => s.name.toLowerCase().contains(q));
+              },
+              displayStringForOption: (s) => s.name,
+              onSelected: (s) {
+                setState(() => _shopId = s.id);
+              },
+              fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                return TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  decoration: InputDecoration(
+                    labelText: 'Search & choose medical shop',
+                    hintText: 'Type shop name...',
+                    prefixIcon: const Icon(Icons.storefront_outlined, color: AppColors.total),
+                    suffixIcon: controller.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            tooltip: 'Clear selection',
+                            splashRadius: 18,
+                            onPressed: () {
+                              controller.clear();
+                              setState(() => _shopId = null);
                             },
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.arrow_drop_down),
+                            tooltip: 'Show all shops',
+                            splashRadius: 18,
+                            onPressed: () {
+                              if (!focusNode.hasFocus) {
+                                focusNode.requestFocus();
+                              }
+                            },
+                          ),
+                  ),
+                  onSubmitted: (_) => onFieldSubmitted(),
+                );
+              },
+              optionsViewBuilder: (context, onSelected, options) {
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 10,
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.white,
+                    child: Container(
+                      width: 340,
+                      constraints: const BoxConstraints(maxHeight: 280),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.border, width: 1.2),
+                      ),
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        shrinkWrap: true,
+                        itemCount: options.length,
+                        itemBuilder: (context, index) {
+                          final s = options.elementAt(index);
+                          final isSelected = s.id == _shopId;
+                          return ListTile(
+                            dense: true,
+                            selected: isSelected,
+                            leading: Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: isSelected ? const Color(0xFFE0F2FE) : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.storefront_outlined,
+                                size: 18,
+                                color: isSelected ? AppColors.total : const Color(0xFF64748B),
+                              ),
+                            ),
+                            title: Text(
+                              s.name + (s.isActive ? '' : ' (inactive)'),
+                              style: TextStyle(
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                color: isSelected ? AppColors.total : AppColors.textPrimary,
+                              ),
+                            ),
+                            onTap: () => onSelected(s),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 16),
+
+      // 3. Payment Amounts Section
+      const SectionTitle('Payment amounts'),
+      const SizedBox(height: 10),
+      GlassCard(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 500;
+                final itemWidth = isWide ? (constraints.maxWidth - 14) / 2 : constraints.maxWidth;
+                return Wrap(
+                  spacing: 14,
+                  runSpacing: 14,
+                  children: [
+                    SizedBox(
+                      width: itemWidth,
+                      child: TextField(
+                        controller: _cash,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          labelText: 'Cash amount',
+                          prefixText: '₹ ',
+                          prefixIcon: Container(
+                            width: 36,
+                            height: 36,
+                            margin: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8F5E9),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.payments_outlined, color: Color(0xFF10B981), size: 20),
                           ),
                         ),
                       ),
-                    );
-                  },
-                ),
-              ),
-            ]),
-            const SizedBox(height: 18),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final itemWidth = constraints.maxWidth > 520
-                    ? (constraints.maxWidth - 12) / 2
-                    : constraints.maxWidth;
-                return Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    SizedBox(width: itemWidth, child: _amount(_cash, 'Cash', Icons.payments, AppColors.cash)),
-                    SizedBox(width: itemWidth, child: _amount(_gpayCheque, 'Gpay/cheque/CN', Icons.account_balance, AppColors.gpay)),
+                    ),
+                    SizedBox(
+                      width: itemWidth,
+                      child: TextField(
+                        controller: _gpayCheque,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          labelText: 'Gpay/cheque/CN amount',
+                          prefixText: '₹ ',
+                          prefixIcon: Container(
+                            width: 36,
+                            height: 36,
+                            margin: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.account_balance_outlined, color: Color(0xFF3B82F6), size: 20),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 );
               },
             ),
-            const SizedBox(height: 18),
-            GlassContainer(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              borderRadius: BorderRadius.circular(14),
-              color: AppColors.total.withValues(alpha: 0.12),
-              border: Border.all(color: AppColors.total.withValues(alpha: 0.4), width: 1.2),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Total (cash + Gpay/cheque/CN)',
-                      style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary, fontSize: 14),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      inr(total),
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.total,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
             TextField(
               controller: _notes,
               maxLines: 2,
               maxLength: 500,
-              decoration: const InputDecoration(labelText: 'Notes (optional)'),
-            ),
-            const SizedBox(height: 10),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.total,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: _saving ? null : _save,
-              icon: _saving
-                  ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                  : const Icon(Icons.save),
-              label: Text(
-                _editing ? 'Update collection' : 'Save collection',
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              decoration: const InputDecoration(
+                labelText: 'Notes (optional)',
+                prefixIcon: Icon(Icons.notes_rounded, color: Color(0xFF64748B)),
               ),
             ),
           ],
         ),
       ),
+      const SizedBox(height: 22),
+
+      // 4. Save Button
+      SizedBox(
+        width: double.infinity,
+        height: 52,
+        child: FilledButton.icon(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF0284C7),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            elevation: 2,
+          ),
+          onPressed: _saving ? null : _save,
+          icon: _saving
+              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Icon(Icons.check_circle_outline, size: 20),
+          label: Text(
+            _editing ? 'Update collection' : 'Save collection',
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+        ),
+      ),
+      const SizedBox(height: 32),
     ]);
 
     return _editing

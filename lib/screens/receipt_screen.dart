@@ -186,38 +186,60 @@ class ReceiptScreen extends StatelessWidget {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 480),
                   child: GlassCard(
-                    padding: const EdgeInsets.all(28),
+                    padding: const EdgeInsets.all(26),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                       Center(
-                        child: Image.asset(
-                          'assets/logo.png',
-                          height: 48,
-                          fit: BoxFit.contain,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Image.asset(
+                            'assets/logo.png',
+                            height: 48,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(appTitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-                      const SizedBox(height: 4),
-                      const Text('Collection Receipt', textAlign: TextAlign.center, style: TextStyle(color: AppColors.total, fontWeight: FontWeight.w600, fontSize: 13)),
-                      const Divider(height: 32, color: AppColors.border),
+                      const Text(appTitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF0F172A), letterSpacing: -0.3)),
+                      const SizedBox(height: 2),
+                      const Text('Collection Receipt', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF0284C7), fontWeight: FontWeight.w700, fontSize: 13)),
+                      const Divider(height: 28, color: Color(0xFFE2E8F0)),
                       line('Receipt no.', c.receiptNumber),
                       line('Collection date', dmy(c.date)),
                       line('Medical shop', c.shopName),
-                      const Divider(height: 32, color: AppColors.border),
+                      const Divider(height: 28, color: Color(0xFFE2E8F0)),
                       line('Cash', inr(c.cash)),
                       line('Gpay/cheque/CN', inr(c.gpay + c.cheque)),
-                      const Divider(height: 32, color: AppColors.border),
-                      line('Total amount', inr(c.total), strong: true),
+                      const Divider(height: 28, color: Color(0xFFE2E8F0)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE0F2FE),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFBAE6FD)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('Total amount', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0C4A6E))),
+                            const Spacer(),
+                            Text(inr(c.total), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF0284C7), letterSpacing: -0.4)),
+                          ],
+                        ),
+                      ),
                       if (c.notes != null && c.notes!.isNotEmpty) ...[
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.02),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.border),
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
                           ),
-                          child: Text('Notes: ${c.notes}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                          child: Text('Notes: ${c.notes}', style: const TextStyle(color: Color(0xFF475569), fontSize: 13)),
                         ),
                       ],
                       const SizedBox(height: 16),
@@ -225,7 +247,7 @@ class ReceiptScreen extends StatelessWidget {
                         Text(
                           'Recorded on ${dmy(c.createdAt)}',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
                         ),
                     ]),
                   ),

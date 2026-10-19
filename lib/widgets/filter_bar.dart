@@ -115,10 +115,10 @@ class _FilterBarState extends State<FilterBar> {
             ),
           FilledButton.icon(
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.total,
-              foregroundColor: Colors.black,
+              backgroundColor: const Color(0xFF0284C7),
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () => _set(f.copyWith(q: _q.text.trim().isEmpty ? null : _q.text.trim())),
             icon: const Icon(Icons.filter_alt, size: 18),

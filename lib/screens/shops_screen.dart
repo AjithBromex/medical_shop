@@ -101,13 +101,13 @@ class _ShopsScreenState extends State<ShopsScreen> {
           floatingActionButton: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(color: AppColors.total.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 4)),
+              boxShadow: const [
+                BoxShadow(color: Color(0x330284C7), blurRadius: 16, offset: Offset(0, 4)),
               ],
             ),
             child: FloatingActionButton.extended(
-              backgroundColor: AppColors.total,
-              foregroundColor: Colors.black,
+              backgroundColor: const Color(0xFF0284C7),
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               onPressed: _edit,
               icon: const Icon(Icons.add),
@@ -116,103 +116,180 @@ class _ShopsScreenState extends State<ShopsScreen> {
           ),
           body: PageBody([
             TextField(
-              decoration: const InputDecoration(labelText: 'Search shops', prefixIcon: Icon(Icons.search)),
+              decoration: const InputDecoration(
+                labelText: 'Search shops',
+                prefixIcon: Icon(Icons.search, color: Color(0xFF0284C7)),
+              ),
               onSubmitted: (v) => setState(() => _q = v.trim()),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             GlassCard(
               padding: EdgeInsets.zero,
               child: rows.isEmpty
                   ? const EmptyState('No medical shops yet. Tap “Add shop” to create the first one.', icon: Icons.storefront_outlined)
                   : Column(children: [
                       for (var i = 0; i < rows.length; i++) ...[
-                        ListTile(
-                          leading: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: rows[i].shop.isActive ? AppColors.total.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: rows[i].shop.isActive ? AppColors.total.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.1),
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.storefront_outlined,
-                              color: rows[i].shop.isActive ? AppColors.total : AppColors.textMuted,
-                              size: 22,
-                            ),
-                          ),
-                          title: Row(
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  rows[i].shop.name,
-                                  style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                                  overflow: TextOverflow.ellipsis,
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: rows[i].shop.isActive ? const Color(0xFFE0F2FE) : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.storefront_outlined,
+                                  color: rows[i].shop.isActive ? const Color(0xFF0284C7) : const Color(0xFF94A3B8),
+                                  size: 22,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              SyncItemBadge(isPending: rows[i].shop.isPendingSync),
-                            ],
-                          ),
-                          subtitle: Text(
-                            [
-                              if (rows[i].shop.phone != null) rows[i].shop.phone!,
-                              if (rows[i].shop.address != null) rows[i].shop.address!,
-                              '${rows[i].count} collections · ${inr(rows[i].total)}',
-                              if (!rows[i].shop.isActive) 'Inactive',
-                            ].join('\n'),
-                            style: const TextStyle(color: AppColors.textSecondary),
-                          ),
-                          isThreeLine: true,
-                          trailing: PopupMenuButton<String>(
-                            iconColor: AppColors.textSecondary,
-                            onSelected: (v) async {
-                              switch (v) {
-                                case 'edit':
-                                  _edit(rows[i].shop);
-                                case 'toggle':
-                                  _run(() => Repository.instance.toggleShop(rows[i].shop),
-                                      'Shop “${rows[i].shop.name}” ${rows[i].shop.isActive ? 'deactivated (history is kept)' : 'activated'}.');
-                                case 'delete':
-                                  if (await confirm(context, 'Delete shop?', 'Delete “${rows[i].shop.name}”? Shops with collections cannot be deleted.')) {
-                                    _run(() => Repository.instance.deleteShop(rows[i].shop.id!), 'Shop “${rows[i].shop.name}” deleted.');
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            rows[i].shop.name,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 15,
+                                              color: rows[i].shop.isActive ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        SyncItemBadge(isPending: rows[i].shop.isPendingSync),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    if (rows[i].shop.phone != null && rows[i].shop.phone!.isNotEmpty) ...[
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.phone_outlined, size: 14, color: Color(0xFF64748B)),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            rows[i].shop.phone!,
+                                            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12.5),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                    ],
+                                    if (rows[i].shop.address != null && rows[i].shop.address!.isNotEmpty) ...[
+                                      Text(
+                                        rows[i].shop.address!,
+                                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                    ],
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 4,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF1F5F9),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            '${rows[i].count} collections',
+                                            style: const TextStyle(color: Color(0xFF475569), fontSize: 11, fontWeight: FontWeight.w600),
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFE0F2FE),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            inr(rows[i].total),
+                                            style: const TextStyle(color: Color(0xFF0284C7), fontSize: 11, fontWeight: FontWeight.w700),
+                                          ),
+                                        ),
+                                        if (!rows[i].shop.isActive)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFEE2E2),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Text(
+                                              'Inactive',
+                                              style: TextStyle(color: Color(0xFFDC2626), fontSize: 11, fontWeight: FontWeight.w700),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuButton<String>(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                icon: const Icon(Icons.more_vert, size: 20, color: Color(0xFF64748B)),
+                                onSelected: (v) async {
+                                  switch (v) {
+                                    case 'edit':
+                                      _edit(rows[i].shop);
+                                    case 'toggle':
+                                      _run(() => Repository.instance.toggleShop(rows[i].shop),
+                                          'Shop “${rows[i].shop.name}” ${rows[i].shop.isActive ? 'deactivated (history is kept)' : 'activated'}.');
+                                    case 'delete':
+                                      if (await confirm(context, 'Delete shop?', 'Delete “${rows[i].shop.name}”? Shops with collections cannot be deleted.')) {
+                                        _run(() => Repository.instance.deleteShop(rows[i].shop.id!), 'Shop “${rows[i].shop.name}” deleted.');
+                                      }
                                   }
-                              }
-                            },
-                            itemBuilder: (_) => [
-                              const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                              PopupMenuItem(value: 'toggle', child: Text(rows[i].shop.isActive ? 'Deactivate' : 'Activate')),
-                              const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                                },
+                                itemBuilder: (_) => [
+                                  const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                                  PopupMenuItem(value: 'toggle', child: Text(rows[i].shop.isActive ? 'Deactivate' : 'Activate')),
+                                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                                ],
+                              ),
                             ],
                           ),
                         ),
-                        if (i < rows.length - 1) Divider(height: 1, color: Colors.white.withValues(alpha: 0.08)),
+                        if (i < rows.length - 1) const Divider(height: 1, color: Color(0xFFE2E8F0)),
                       ],
                     ]),
             ),
-            const SectionTitle('Data & backup'),
+            const SectionTitle('Data & cloud backup'),
+            const SizedBox(height: 10),
             GlassCard(
               padding: const EdgeInsets.all(16),
               child: Wrap(spacing: 10, runSpacing: 10, children: [
                 GlassButton(
                   onPressed: _backup,
-                  icon: Icons.download,
+                  icon: Icons.download_rounded,
                   accentColor: AppColors.total,
                   isPrimary: true,
-                  child: const Text('Create & share backup'),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: const Text('Export local backup'),
                 ),
                 GlassButton(
                   onPressed: _restore,
-                  icon: Icons.restore,
-                  accentColor: AppColors.gpay,
-                  child: const Text('Sync with Atlas'),
+                  icon: Icons.sync_rounded,
+                  accentColor: const Color(0xFF10B981),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: const Text('Sync with MongoDB Atlas'),
                 ),
                 GlassButton(
                   onPressed: () => showConfigureServerDialog(context),
                   icon: Icons.cloud_outlined,
-                  accentColor: AppColors.total,
+                  accentColor: const Color(0xFF3B82F6),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   child: const Text('Cloud Server Settings'),
                 ),
               ]),
