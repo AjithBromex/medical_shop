@@ -15,7 +15,10 @@ class ApiService {
   static String get defaultBaseUrl {
     const envUrl = String.fromEnvironment('API_BASE_URL');
     if (envUrl.isNotEmpty) return envUrl;
-    return defaultHostedUrl;
+    if (!kIsWeb && Platform.isAndroid) {
+      return 'http://10.0.2.2:5000/api';
+    }
+    return 'http://localhost:5000/api';
   }
 
   static String get defaultApiKey {
