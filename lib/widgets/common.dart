@@ -225,7 +225,7 @@ class HeroStatCard extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 27,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: -0.6,
                       ),
                     ),
@@ -345,7 +345,7 @@ class MiniStatCard extends StatelessWidget {
                   value,
                   style: const TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     color: Color(0xFF0F172A),
                     letterSpacing: -0.4,
                   ),
@@ -446,7 +446,7 @@ class WideStatCard extends StatelessWidget {
                         value,
                         style: const TextStyle(
                           fontSize: 22,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                           color: Color(0xFF0F172A),
                           letterSpacing: -0.4,
                         ),

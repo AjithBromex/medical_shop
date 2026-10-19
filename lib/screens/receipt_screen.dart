@@ -226,7 +226,7 @@ class ReceiptScreen extends StatelessWidget {
                           children: [
                             const Text('Total amount', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0C4A6E))),
                             const Spacer(),
-                            Text(inr(c.total), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF0284C7), letterSpacing: -0.4)),
+                            Text(inr(c.total), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF0284C7), letterSpacing: -0.4)),
                           ],
                         ),
                       ),

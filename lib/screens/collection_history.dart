@@ -231,7 +231,7 @@ class _CollectionHistoryState extends State<CollectionHistory> {
                                   Text(
                                     inr(h.rows[i].total),
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w700,
                                       fontSize: 16,
                                       color: Color(0xFF0284C7),
                                       letterSpacing: -0.3,

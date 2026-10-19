@@ -304,7 +304,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                   Text(
                                     inr(e.rows[i].amount),
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w700,
                                       color: Color(0xFFE11D48),
                                       fontSize: 16,
                                       letterSpacing: -0.3,
