@@ -45,28 +45,18 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   }
 
   Future<void> _openForm({Expense? existing, required List<String> categories}) async {
-    await showModalBottomSheet(
+    await showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x330F172A),
-                blurRadius: 24,
-                offset: Offset(0, -4),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            top: false,
-            child: _ExpenseForm(existing: existing, categories: categories),
-          ),
+      barrierDismissible: true,
+      barrierColor: const Color(0x730F172A),
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+        clipBehavior: Clip.antiAlias,
+        child: SingleChildScrollView(
+          child: _ExpenseForm(existing: existing, categories: categories),
         ),
       ),
     );
@@ -416,66 +406,178 @@ class _ExpenseFormState extends State<_ExpenseForm> {
   @override
   Widget build(BuildContext context) {
     final cats = {...widget.categories, if (widget.existing != null) widget.existing!.category}.toList();
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Center(
-          child: Container(
-            width: 44,
-            height: 4.5,
-            margin: const EdgeInsets.only(bottom: 20),
-            decoration: BoxDecoration(
-              color: const Color(0xFFCBD5E1),
-              borderRadius: BorderRadius.circular(3),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 20, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                widget.existing == null ? 'Add expense' : 'Edit ${widget.existing!.displayId}',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8), size: 22),
+                onPressed: () => Navigator.pop(context),
+                splashRadius: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          ErrorBox(_errors),
+          DateField(
+            label: 'Expense date',
+            value: _date,
+            onChanged: (d) => setState(() => _date = d ?? _date),
+          ),
+          const SizedBox(height: 14),
+          DropdownButtonFormField<String>(
+            value: cats.contains(_category) ? _category : null,
+            dropdownColor: Colors.white,
+            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary, size: 24),
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
+            decoration: InputDecoration(
+              labelText: 'Category',
+              prefixIcon: const Icon(
+                Icons.category_outlined,
+                color: AppColors.textPrimary,
+                size: 22,
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+              filled: true,
+              fillColor: Colors.white,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFE11D48), width: 1.8),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+              ),
+            ),
+            items: [
+              for (final c in cats)
+                DropdownMenuItem(
+                  value: c,
+                  child: Text(c),
+                ),
+            ],
+            onChanged: (v) => setState(() => _category = v),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: false),
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
+            decoration: InputDecoration(
+              labelText: 'Amount',
+              prefixIcon: const Icon(
+                Icons.currency_rupee_rounded,
+                color: AppColors.textPrimary,
+                size: 20,
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+              filled: true,
+              fillColor: Colors.white,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFE11D48), width: 1.8),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+              ),
             ),
           ),
-        ),
-        Text(
-          widget.existing == null ? 'Add expense' : 'Edit ${widget.existing!.displayId}',
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF0F172A),
-            letterSpacing: -0.3,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ErrorBox(_errors),
-        DateField(label: 'Expense date', value: _date, onChanged: (d) => setState(() => _date = d ?? _date)),
-        const SizedBox(height: 14),
-        DropdownButtonFormField<String>(
-          initialValue: cats.contains(_category) ? _category : null,
-          dropdownColor: Colors.white,
-          decoration: const InputDecoration(labelText: 'Category', prefixIcon: Icon(Icons.category_outlined)),
-          items: [for (final c in cats) DropdownMenuItem(value: c, child: Text(c))],
-          onChanged: (v) => setState(() => _category = v),
-        ),
-        const SizedBox(height: 14),
-        TextField(
-          controller: _amount,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Amount', prefixText: '₹ ', prefixIcon: Icon(Icons.currency_rupee, color: AppColors.expenses)),
-        ),
-        const SizedBox(height: 14),
-        TextField(controller: _notes, maxLines: 2, maxLength: 500, decoration: const InputDecoration(labelText: 'Notes (optional)', prefixIcon: Icon(Icons.notes_outlined))),
-        const SizedBox(height: 18),
-        SizedBox(
-          height: 50,
-          child: FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFE11D48),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              elevation: 2,
+          const SizedBox(height: 14),
+          TextField(
+            controller: _notes,
+            maxLines: 2,
+            maxLength: 500,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
             ),
-            onPressed: _saving ? null : _save,
-            child: Text(
-              widget.existing == null ? 'Save expense' : 'Update expense',
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            decoration: InputDecoration(
+              labelText: 'Notes (optional)',
+              prefixIcon: const Icon(
+                Icons.notes_rounded,
+                color: AppColors.textPrimary,
+                size: 22,
+              ),
+              counterStyle: const TextStyle(
+                fontSize: 11,
+                color: Color(0xFF94A3B8),
+                fontWeight: FontWeight.w500,
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+              filled: true,
+              fillColor: Colors.white,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFE11D48), width: 1.8),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+              ),
             ),
           ),
-        ),
-      ]),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 50,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFE11D48),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: _saving ? null : _save,
+              child: Text(
+                widget.existing == null ? 'Save expense' : 'Update expense',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
