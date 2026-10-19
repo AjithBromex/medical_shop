@@ -10,15 +10,12 @@ class ApiService {
   static final ApiService instance = ApiService._();
   ApiService._();
 
-  static const String defaultHostedUrl = 'https://medical-shop-api.onrender.com/api';
+  static const String defaultHostedUrl = 'https://medical-shop-ww9a.onrender.com/api';
 
   static String get defaultBaseUrl {
     const envUrl = String.fromEnvironment('API_BASE_URL');
     if (envUrl.isNotEmpty) return envUrl;
-    if (!kIsWeb && Platform.isAndroid) {
-      return 'http://10.0.2.2:5000/api';
-    }
-    return 'http://localhost:5000/api';
+    return defaultHostedUrl;
   }
 
   static String get defaultApiKey {
