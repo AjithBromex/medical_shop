@@ -522,7 +522,7 @@ class _CenterAddButton extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   Positioned(
-                    top: -14,
+                    top: -22,
                     child: Container(
                       width: 54,
                       height: 54,
@@ -547,7 +547,7 @@ class _CenterAddButton extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 4),
             Text(
               'Add',
               style: TextStyle(
