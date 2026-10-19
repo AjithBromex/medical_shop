@@ -50,7 +50,7 @@ class DashboardScreen extends StatelessWidget {
           final remAll = d.all.total - d.expAll;
 
           return PageBody([
-            SectionTitle('Today — ${dmy(td)}'),
+            SectionTitle('Today — ${dayWithDmy(td)}', showBar: false),
             const SizedBox(height: 12),
 
             // 1. Hero Banner: Remaining Cash
@@ -87,14 +87,20 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // 3. Full Width: Total Collection
+            // 3. Full Width: Total Collection (Vibrant Sky Blue Card)
             _WideStatCard(
               label: 'Total collection',
               value: inr(d.t.total),
               sub: '${d.t.count} transaction${d.t.count == 1 ? '' : 's'}',
               icon: Icons.monetization_on_outlined,
-              iconColor: const Color(0xFF0284C7),
-              iconBg: const Color(0xFFE0F2FE),
+              iconColor: Colors.white,
+              iconBg: Colors.white.withValues(alpha: 0.22),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0284C7), Color(0xFF0EA5E9)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              isDark: true,
               onTap: () => onGo(2),
             ),
             const SizedBox(height: 12),
@@ -116,7 +122,7 @@ class DashboardScreen extends StatelessWidget {
                   child: _MiniStatCard(
                     label: 'Total remaining',
                     value: inr(remToday),
-                    icon: Icons.savings_outlined,
+                    icon: Icons.published_with_changes_rounded,
                     iconColor: const Color(0xFF10B981),
                     iconBg: const Color(0xFFE8F5E9),
                   ),
@@ -126,7 +132,7 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 20),
 
             // 5. Section: All dates
-            const SectionTitle('All dates'),
+            const SectionTitle('All dates', showBar: false),
             const SizedBox(height: 12),
 
             // 6. Row of 2: Total collection & Total expenses (All dates)
@@ -137,7 +143,7 @@ class DashboardScreen extends StatelessWidget {
                     label: 'Total collection',
                     value: inr(d.all.total),
                     sub: '${d.all.count} transactions',
-                    icon: Icons.monetization_on_outlined,
+                    icon: Icons.arrow_circle_up_outlined,
                     iconColor: const Color(0xFF0284C7),
                     iconBg: const Color(0xFFE0F2FE),
                   ),
@@ -251,7 +257,7 @@ class _HeroBalanceCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF0C4A6E), Color(0xFF0284C7)],
+              colors: [Color(0xFF0369A1), Color(0xFF0284C7)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -278,7 +284,7 @@ class _HeroBalanceCard extends StatelessWidget {
                   ),
                 ),
                 child: const Icon(
-                  Icons.account_balance_wallet_outlined,
+                  Icons.crop_16_9_rounded,
                   color: Color(0xFF38BDF8),
                   size: 28,
                 ),
@@ -438,6 +444,9 @@ class _WideStatCard extends StatelessWidget {
   final Color iconColor;
   final Color iconBg;
   final VoidCallback? onTap;
+  final Gradient? gradient;
+  final Color? backgroundColor;
+  final bool isDark;
 
   const _WideStatCard({
     required this.label,
@@ -447,28 +456,32 @@ class _WideStatCard extends StatelessWidget {
     required this.iconColor,
     required this.iconBg,
     this.onTap,
+    this.gradient,
+    this.backgroundColor,
+    this.isDark = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
-            boxShadow: const [
+            color: gradient == null ? (backgroundColor ?? Colors.white) : null,
+            gradient: gradient,
+            borderRadius: BorderRadius.circular(20),
+            border: isDark ? null : Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x0A0F172A),
-                blurRadius: 10,
-                offset: Offset(0, 3),
+                color: isDark ? const Color(0x330284C7) : const Color(0x0A0F172A),
+                blurRadius: isDark ? 16 : 10,
+                offset: isDark ? const Offset(0, 6) : const Offset(0, 3),
               ),
             ],
           ),
@@ -479,7 +492,7 @@ class _WideStatCard extends StatelessWidget {
                 height: 52,
                 decoration: BoxDecoration(
                   color: iconBg,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(icon, color: iconColor, size: 26),
               ),
@@ -490,19 +503,19 @@ class _WideStatCard extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B),
+                        color: isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF64748B),
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       value,
-                      style: const TextStyle(
-                        fontSize: 22,
+                      style: TextStyle(
+                        fontSize: 23,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF0F172A),
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                         letterSpacing: -0.4,
                       ),
                     ),
@@ -510,10 +523,10 @@ class _WideStatCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         sub!,
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF94A3B8),
+                          color: isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF94A3B8),
                         ),
                       ),
                     ],

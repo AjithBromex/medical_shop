@@ -13,4 +13,5 @@ DateTime parseIso(String s) {
 DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 DateTime today() => dateOnly(DateTime.now());
 String shortDay(DateTime d) => DateFormat('dd MMM').format(d);
+String dayWithDmy(DateTime d) => DateFormat('EEE, dd-MM-yyyy').format(d);
 String monthLabel(String ym) => DateFormat('MMM yyyy').format(DateTime.parse('$ym-01'));

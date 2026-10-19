@@ -537,25 +537,27 @@ class EmptyState extends StatelessWidget {
 class SectionTitle extends StatelessWidget {
   final String text;
   final Widget? trailing;
-  const SectionTitle(this.text, {super.key, this.trailing});
+  final bool showBar;
+  const SectionTitle(this.text, {super.key, this.trailing, this.showBar = true});
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(top: 22, bottom: 12),
         child: Row(children: [
-          Container(
-            width: 4.5,
-            height: 18,
-            margin: const EdgeInsets.only(right: 10),
-            decoration: BoxDecoration(
-              color: AppColors.total,
-              borderRadius: BorderRadius.circular(3),
+          if (showBar)
+            Container(
+              width: 4.5,
+              height: 18,
+              margin: const EdgeInsets.only(right: 10),
+              decoration: BoxDecoration(
+                color: AppColors.total,
+                borderRadius: BorderRadius.circular(3),
+              ),
             ),
-          ),
           Expanded(
             child: Text(
               text,
               style: const TextStyle(
-                fontSize: 17,
+                fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF0F172A),
                 letterSpacing: -0.3,
