@@ -47,7 +47,7 @@ class SyncQueueManager {
   Timer? _autoSyncTimer;
   bool _isProcessing = false;
 
-  void startAutoSync({Duration interval = const Duration(seconds: 25)}) {
+  void startAutoSync({Duration interval = const Duration(seconds: 10)}) {
     _autoSyncTimer?.cancel();
     _autoSyncTimer = Timer.periodic(interval, (_) => processQueue());
   }
