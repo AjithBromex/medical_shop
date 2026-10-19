@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:medical_shop_manager/data/models.dart';
 import 'package:medical_shop_manager/data/repository.dart';
 import 'package:medical_shop_manager/screens/receipt_screen.dart';
+import 'package:medical_shop_manager/screens/report_export.dart';
 
 void main() {
   group('Receipt Number Sequencing Parsing Logic', () {
@@ -52,5 +53,29 @@ void main() {
       final bytes = await doc.save();
       expect(bytes.isNotEmpty, isTrue);
     });
+
+    test('buildReportPdfDocument builds date_range PDF document matching reference format', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final report = Report(
+        'date_range',
+        'Date-range Collection Report',
+        ['#', 'Receipt No.', 'Date', 'Customer', 'Cash', 'Gpay/cheque/CN', 'Total', 'Notes'],
+        [
+          ['1', '#000001', '19-10-2026', 'rr', '₹1,000', '₹200', '₹1,200', '-'],
+          ['2', '#000002', '19-10-2026', 'rr', '₹500', '₹0', '₹500', '-'],
+          ['3', '#140000', '19-10-2026', 'rr', '₹2,000', '₹0', '₹2,000', '-'],
+        ],
+        ['Total', '-', '-', '-', '₹3,500', '₹200', '₹3,700', '-'],
+      );
+      final filters = Filters(
+        dateFrom: DateTime(2026, 10, 19),
+        dateTo: DateTime(2026, 10, 19),
+      );
+
+      final doc = await buildReportPdfDocument(report, filters);
+      final bytes = await doc.save();
+      expect(bytes.isNotEmpty, isTrue);
+    });
   });
 }
+

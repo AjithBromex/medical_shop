@@ -498,9 +498,19 @@ FROM collections c JOIN medical_shops s ON s.id = c.medical_shop_id ${cw.where} 
     late List<List<Object?>> rows;
     switch (kind) {
       case 'date_range':
-        headers = ['Receipt No', 'Date', 'Medical Shop', 'Cash', 'Gpay/cheque/CN', 'Total', 'Notes'];
+        headers = ['#', 'Receipt No.', 'Date', 'Customer', 'Cash', 'Gpay/cheque/CN', 'Total', 'Notes'];
+        var idx = 1;
         rows = (await collections(f, oldestFirst: true))
-            .map((c) => <Object?>[c.receiptNumber, c.date, c.shopName, Money(c.cash), Money(c.gpay + c.cheque), Money(c.total), c.notes ?? ''])
+            .map((c) => <Object?>[
+                  idx++,
+                  c.receiptNumber,
+                  c.date,
+                  c.shopName,
+                  Money(c.cash),
+                  Money(c.gpay + c.cheque),
+                  Money(c.total),
+                  (c.notes == null || c.notes!.isEmpty) ? '-' : c.notes,
+                ])
             .toList();
       case 'daily_collection':
         headers = ['Date', 'Transactions', 'Cash', 'Gpay/cheque/CN', 'Total'];
@@ -508,7 +518,7 @@ FROM collections c JOIN medical_shops s ON s.id = c.medical_shop_id ${cw.where} 
             .map((r) => <Object?>[parseIso(r.key), r.count, Money(r.cash), Money(r.gpay + r.cheque), Money(r.total)])
             .toList();
       case 'shop_wise':
-        headers = ['Medical Shop', 'Status', 'Transactions', 'Cash', 'Gpay/cheque/CN', 'Total'];
+        headers = ['Customer', 'Status', 'Transactions', 'Cash', 'Gpay/cheque/CN', 'Total'];
         rows = (await shopBreakdown(df, dt, shopId))
             .map((r) => <Object?>[r.name, r.active ? 'Active' : 'Inactive', r.count, Money(r.cash), Money(r.gpay + r.cheque), Money(r.total)])
             .toList();
@@ -529,7 +539,7 @@ FROM collections c JOIN medical_shops s ON s.id = c.medical_shop_id ${cw.where} 
       case 'expenses':
         headers = ['Expense ID', 'Date', 'Category', 'Description', 'Amount', 'Notes'];
         rows = (await expenses(f, oldestFirst: true))
-            .map((e) => <Object?>[e.displayId, e.date, e.category, e.description, Money(e.amount), e.notes ?? ''])
+            .map((e) => <Object?>[e.displayId, e.date, e.category, e.description, Money(e.amount), (e.notes == null || e.notes!.isEmpty) ? '-' : e.notes])
             .toList();
       case 'daily_balance':
         headers = ['Date', 'Cash', 'Expenses', 'Remaining Cash (Cash - Exp)', 'Gpay/cheque/CN', 'Total Collection', 'Total Remaining'];
@@ -543,7 +553,7 @@ FROM collections c JOIN medical_shops s ON s.id = c.medical_shop_id ${cw.where} 
     if (rows.isNotEmpty) {
       final moneyCols = [for (var i = 0; i < headers.length; i++) if (rows.every((r) => r[i] is Money)) i];
       if (moneyCols.isNotEmpty) {
-        footer = [for (var i = 0; i < headers.length; i++) i == 0 ? 'Total' : ''];
+        footer = [for (var i = 0; i < headers.length; i++) i == 0 ? 'Total' : '-'];
         for (final i in moneyCols) {
           footer[i] = Money(rows.fold<int>(0, (s, r) => s + (r[i] as Money).paise));
         }
