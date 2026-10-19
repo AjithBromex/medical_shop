@@ -31,12 +31,22 @@ class _ShopsScreenState extends State<ShopsScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: GlassContainer(
-          blur: 24,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          color: Colors.white.withValues(alpha: 0.96),
-          border: Border.all(color: AppColors.border, width: 1.2),
-          child: _ShopForm(shop: shop),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x330F172A),
+                blurRadius: 24,
+                offset: Offset(0, -4),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: _ShopForm(shop: shop),
+          ),
         ),
       ),
     );
@@ -266,42 +276,94 @@ class _ShopFormState extends State<_ShopForm> {
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(2)),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 38,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
             ),
-          ),
-          Text(
-            widget.shop == null ? 'Add medical shop' : 'Edit shop',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 14),
-          ErrorBox(_errors),
-          TextField(
-            controller: _name,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Shop name', prefixIcon: Icon(Icons.storefront)),
-            onSubmitted: (_) => _save(),
-          ),
-          const SizedBox(height: 18),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.total,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            Text(
+              widget.shop == null ? 'Add medical shop' : 'Edit shop',
+              style: const TextStyle(
+                fontSize: 18.5,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+                letterSpacing: -0.2,
+              ),
             ),
-            onPressed: _saving ? null : _save,
-            child: Text(
-              widget.shop == null ? 'Save shop' : 'Update shop',
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+            const SizedBox(height: 16),
+            ErrorBox(_errors),
+            TextField(
+              controller: _name,
+              autofocus: true,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+              decoration: InputDecoration(
+                labelText: 'Shop name',
+                labelStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF0369A1),
+                ),
+                prefixIcon: const Icon(
+                  Icons.storefront_outlined,
+                  color: AppColors.textPrimary,
+                  size: 22,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                filled: true,
+                fillColor: Colors.white,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF0369A1), width: 1.6),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF0369A1), width: 2.0),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF0369A1), width: 1.6),
+                ),
+              ),
+              onSubmitted: (_) => _save(),
             ),
-          ),
-        ]),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 48,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF0369A1),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: _saving ? null : _save,
+                child: Text(
+                  widget.shop == null ? 'Save shop' : 'Update shop',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15.5,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       );
 }
