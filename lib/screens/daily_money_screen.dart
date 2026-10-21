@@ -84,14 +84,10 @@ class _DailyMoneyScreenState extends State<DailyMoneyScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 3. Full Width: Total Collection
-            WideStatCard(
-              label: 'Total collection',
+            // 3. Full Width: Total Collection (Matching Home Page)
+            WideStatCard.totalCollection(
               value: inr(d.t.total),
               sub: '${d.t.count} transaction${d.t.count == 1 ? '' : 's'}',
-              icon: Icons.monetization_on_outlined,
-              iconColor: const Color(0xFF0284C7),
-              iconBg: const Color(0xFFE0F2FE),
             ),
             const SizedBox(height: 12),
 
@@ -138,13 +134,35 @@ class _DailyMoneyScreenState extends State<DailyMoneyScreen> {
                           color: const Color(0xFFFFE4E6),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.receipt_outlined, color: Color(0xFFF43F5E), size: 18),
+                        child: const Icon(Icons.confirmation_number_outlined, color: Color(0xFFF43F5E), size: 18),
                       ),
-                      title: Text(d.cats[i].category, style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
-                      subtitle: Text('${d.cats[i].count} entr${d.cats[i].count == 1 ? 'y' : 'ies'}', style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                      title: Text(
+                        d.cats[i].category,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xFFF8FAFC)
+                              : const Color(0xFF0F172A),
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${d.cats[i].count} entr${d.cats[i].count == 1 ? 'y' : 'ies'}',
+                        style: TextStyle(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
+                          fontSize: 12,
+                        ),
+                      ),
                       trailing: Text(inr(d.cats[i].total), style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFFE11D48), fontSize: 15)),
                     ),
-                    if (i < d.cats.length - 1) const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                    if (i < d.cats.length - 1)
+                      Divider(
+                        height: 1,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
                   ],
                 ]),
               ),
@@ -225,43 +243,51 @@ class _DailyMoneyScreenState extends State<DailyMoneyScreen> {
               padding: const EdgeInsets.all(8),
               child: d.history.isEmpty
                   ? const SizedBox.shrink()
-                  : SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        showCheckboxColumn: false,
-                        headingRowHeight: 44,
-                        dataRowMinHeight: 40,
-                        dataRowMaxHeight: 46,
-                        headingTextStyle: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                        dataTextStyle: const TextStyle(color: AppColors.textPrimary),
-                        columns: const [
-                          DataColumn(label: Text('Date')),
-                          DataColumn(label: Text('Cash'), numeric: true),
-                          DataColumn(label: Text('Expenses'), numeric: true),
-                          DataColumn(label: Text('Remaining Cash\n(Cash − Exp)'), numeric: true),
-                          DataColumn(label: Text('Gpay/cheque/CN'), numeric: true),
-                          DataColumn(label: Text('Total Collection'), numeric: true),
-                          DataColumn(label: Text('Total Remaining'), numeric: true),
-                        ],
-                        rows: [
-                          for (final r in d.history)
-                            DataRow(
-                              onSelectChanged: (_) => setState(() => _day = r.date),
-                              cells: [
-                                DataCell(Text(dmy(r.date))),
-                                DataCell(Text(inr(r.cash))),
-                                DataCell(Text(inr(r.expenses), style: const TextStyle(color: AppColors.expenses))),
-                                DataCell(Text(inr(r.remainingCash),
-                                    style: TextStyle(fontWeight: FontWeight.w800, color: r.remainingCash < 0 ? AppColors.expenses : AppColors.cash))),
-                                DataCell(Text(inr(r.gpay + r.cheque))),
-                                DataCell(Text(inr(r.total), style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.total))),
-                                DataCell(Text(inr(r.remaining),
-                                    style: TextStyle(fontWeight: FontWeight.w800, color: r.remaining < 0 ? AppColors.expenses : AppColors.total))),
-                              ],
-                            ),
-                        ],
-                      ),
-                    ),
+                  : Builder(builder: (context) {
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      final textColor = isDark ? const Color(0xFFF8FAFC) : AppColors.textPrimary;
+                      final totalColor = isDark ? const Color(0xFF38BDF8) : AppColors.total;
+                      final cashColor = isDark ? const Color(0xFF34D399) : AppColors.cash;
+                      final expColor = isDark ? const Color(0xFFFB7185) : AppColors.expenses;
+
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          showCheckboxColumn: false,
+                          headingRowHeight: 46,
+                          dataRowMinHeight: 44,
+                          dataRowMaxHeight: 50,
+                          headingTextStyle: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor),
+                          dataTextStyle: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: textColor),
+                          columns: [
+                            DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor))),
+                            DataColumn(label: Text('Cash', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
+                            DataColumn(label: Text('Expenses', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
+                            DataColumn(label: Text('Remaining Cash\n(Cash − Exp)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
+                            DataColumn(label: Text('Gpay/cheque/CN', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
+                            DataColumn(label: Text('Total Collection', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
+                            DataColumn(label: Text('Total Remaining', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
+                          ],
+                          rows: [
+                            for (final r in d.history)
+                              DataRow(
+                                onSelectChanged: (_) => setState(() => _day = r.date),
+                                cells: [
+                                  DataCell(Text(dmy(r.date), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: textColor))),
+                                  DataCell(Text(inr(r.cash), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: textColor))),
+                                  DataCell(Text(inr(r.expenses), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: expColor))),
+                                  DataCell(Text(inr(r.remainingCash),
+                                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: r.remainingCash < 0 ? expColor : cashColor))),
+                                  DataCell(Text(inr(r.gpay + r.cheque), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: textColor))),
+                                  DataCell(Text(inr(r.total), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: totalColor))),
+                                  DataCell(Text(inr(r.remaining),
+                                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: r.remaining < 0 ? expColor : totalColor))),
+                                ],
+                              ),
+                          ],
+                        ),
+                      );
+                    }),
             ),
             const SizedBox(height: 24),
           ]);

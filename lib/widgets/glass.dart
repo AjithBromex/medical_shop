@@ -42,20 +42,24 @@ class GlassContainer extends StatelessWidget {
       height: height,
       padding: padding,
       decoration: BoxDecoration(
-        color: color ?? (gradient == null ? Colors.white : null),
+        color: color ?? (gradient == null ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white) : null),
         gradient: gradient,
         borderRadius: borderRadius,
         border: border ??
             Border.all(
-              color: AppColors.border,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF334155)
+                  : AppColors.border,
               width: 1.2,
             ),
         boxShadow: boxShadow ??
-            const [
+            [
               BoxShadow(
-                color: Color(0x0A0F172A),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0x33000000)
+                    : const Color(0x0A0F172A),
                 blurRadius: 10,
-                offset: Offset(0, 3),
+                offset: const Offset(0, 3),
               ),
             ],
       ),
@@ -145,20 +149,27 @@ class AmbientBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Stack(
       children: [
-        // Base light space canvas
+        // Base canvas
         Positioned.fill(
           child: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFEDF2F7), // Cool Slate 100
-                  Color(0xFFE2E8F0), // Cool Slate 200
-                  Color(0xFFE5EBF2), // Slate Soft Blue
-                ],
+                colors: isDark
+                    ? const [
+                        Color(0xFF0B132B), // Deep Slate Navy
+                        Color(0xFF0F172A), // Slate 900
+                        Color(0xFF0B132B), // Deep Slate Navy
+                      ]
+                    : const [
+                        Color(0xFFEDF2F7), // Cool Slate 100
+                        Color(0xFFE2E8F0), // Cool Slate 200
+                        Color(0xFFE5EBF2), // Slate Soft Blue
+                      ],
               ),
             ),
           ),
@@ -175,8 +186,8 @@ class AmbientBackdrop extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  AppColors.total.withValues(alpha: 0.12),
-                  AppColors.total.withValues(alpha: 0.03),
+                  AppColors.total.withValues(alpha: isDark ? 0.08 : 0.12),
+                  AppColors.total.withValues(alpha: isDark ? 0.02 : 0.03),
                   Colors.transparent,
                 ],
                 stops: const [0.0, 0.45, 1.0],
@@ -253,9 +264,41 @@ class GlassButton extends StatelessWidget {
     this.isPrimary = false,
   });
 
+  static Color _adaptColorForDark(Color c) {
+    if (c == AppColors.textPrimary) return const Color(0xFFCBD5E1);
+    if (c == AppColors.cash) return const Color(0xFF10B981); // Bright Emerald
+    if (c == AppColors.total) return const Color(0xFF38BDF8); // Sky blue
+    if (c == AppColors.gpay) return const Color(0xFF60A5FA);  // Blue 400
+    if (c == AppColors.cheque) return const Color(0xFFFBBF24); // Amber 400
+    if (c == AppColors.expenses) return const Color(0xFFFB7185); // Rose 400
+    return c;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final color = accentColor ?? (isPrimary ? AppColors.total : AppColors.textPrimary);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = accentColor ?? (isPrimary ? AppColors.total : AppColors.textPrimaryOf(context));
+    final color = isDark ? _adaptColorForDark(baseColor) : baseColor;
+
+    final bgColor = isPrimary
+        ? color.withValues(alpha: isDark ? 0.22 : 0.12)
+        : (isDark ? const Color(0xFF1E293B) : Colors.white);
+
+    final borderColor = isPrimary
+        ? color.withValues(alpha: isDark ? 0.85 : 0.70)
+        : (isDark
+            ? (accentColor != null && accentColor != AppColors.textPrimary
+                ? color.withValues(alpha: 0.35)
+                : const Color(0xFF334155))
+            : AppColors.border);
+
+    final textColor = isPrimary
+        ? (isDark ? const Color(0xFFF8FAFC) : color)
+        : (isDark ? const Color(0xFFF8FAFC) : const Color(0xFF1E293B));
+
+    final iconColor = isPrimary
+        ? (isDark ? const Color(0xFFF8FAFC) : color)
+        : color;
 
     return Material(
       color: Colors.transparent,
@@ -264,15 +307,16 @@ class GlassButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
-            color: isPrimary ? color.withValues(alpha: 0.12) : Colors.white,
+            color: bgColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isPrimary ? color : AppColors.border,
+              color: borderColor,
               width: 1.4,
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0F172A).withValues(alpha: 0.06),
+                color: (isDark ? Colors.black : const Color(0xFF0F172A))
+                    .withValues(alpha: isDark ? 0.35 : 0.06),
                 blurRadius: 10,
                 offset: const Offset(0, 3),
               ),
@@ -284,12 +328,12 @@ class GlassButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 18, color: color),
+                Icon(icon, size: 18, color: iconColor),
                 const SizedBox(width: 8),
               ],
               DefaultTextStyle(
                 style: TextStyle(
-                  color: isPrimary ? color : const Color(0xFF1E293B),
+                  color: textColor,
                   fontWeight: FontWeight.w700,
                   fontSize: 13.5,
                 ),

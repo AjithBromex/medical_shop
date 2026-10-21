@@ -31,7 +31,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Loader<_R>(
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Loader<_R>(
         deps: (_kind, _f.q, _f.dateFrom, _f.dateTo, _f.shopId, _f.category, _f.method),
         loader: _load,
         builder: (context, d) {
@@ -42,7 +44,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               padding: const EdgeInsets.all(14),
               child: DropdownButtonFormField<String>(
                 initialValue: _kind,
-                dropdownColor: Colors.white,
+                dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                 decoration: const InputDecoration(labelText: 'Choose a report', prefixIcon: Icon(Icons.assessment_outlined)),
                 items: [for (final e in reportTitles.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
                 onChanged: (v) => setState(() => _kind = v),
@@ -64,29 +66,45 @@ class _ReportsScreenState extends State<ReportsScreen> {
             if (d.report == null)
               const Padding(padding: EdgeInsets.only(top: 30), child: EmptyState('Pick a report above to see it here.', icon: Icons.description_outlined))
             else ...[
-              SectionTitle(
-                d.report!.title,
-                trailing: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    GlassButton(
+              SectionTitle(d.report!.title),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: GlassButton(
                       onPressed: () => exportReportPdf(context, _kind!, _f),
                       icon: Icons.picture_as_pdf_outlined,
                       accentColor: AppColors.total,
                       isPrimary: true,
-                      child: const Text('Export PDF'),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      child: const Text('Export PDF', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
                     ),
-                    GlassButton(
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: GlassButton(
+                      onPressed: () => printReportPdf(context, _kind!, _f),
+                      icon: Icons.print_outlined,
+                      accentColor: isDark ? const Color(0xFFF8FAFC) : AppColors.textPrimary,
+                      isPrimary: false,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      child: const Text('Print', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: GlassButton(
                       onPressed: () => exportReport(context, _kind!, _f),
                       icon: Icons.table_chart_outlined,
                       accentColor: AppColors.cash,
                       isPrimary: false,
-                      child: const Text('Export CSV'),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      child: const Text('Export Excel', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 12),
               GlassCard(
                 padding: const EdgeInsets.all(8),
                 child: d.report!.rows.isEmpty
@@ -94,22 +112,57 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     : SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: DataTable(
-                          headingRowHeight: 44,
-                          dataRowMinHeight: 40,
-                          dataRowMaxHeight: 46,
-                          headingTextStyle: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                          dataTextStyle: const TextStyle(color: AppColors.textPrimary),
-                          columns: [for (final h in d.report!.headers) DataColumn(label: Text(h, style: const TextStyle(fontWeight: FontWeight.w700)))],
+                          headingRowHeight: 48,
+                          dataRowMinHeight: 44,
+                          dataRowMaxHeight: 52,
+                          headingTextStyle: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? const Color(0xFFF8FAFC) : AppColors.textPrimary,
+                          ),
+                          dataTextStyle: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                          ),
+                          columns: [
+                            for (final h in d.report!.headers)
+                              DataColumn(
+                                label: Text(
+                                  h,
+                                  style: TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: isDark ? const Color(0xFFF8FAFC) : AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                          ],
                           rows: [
-                            for (final r in d.report!.rows) DataRow(cells: [for (final v in r) DataCell(Text(Report.cell(v)))]),
+                            for (final r in d.report!.rows)
+                              DataRow(
+                                cells: [
+                                  for (final v in r)
+                                    DataCell(
+                                      Text(
+                                        Report.cell(v),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             if (d.report!.footer != null)
                               DataRow(
-                                color: WidgetStatePropertyAll(AppColors.total.withValues(alpha: 0.15)),
+                                color: WidgetStatePropertyAll(AppColors.total.withValues(alpha: isDark ? 0.25 : 0.15)),
                                 cells: [
                                   for (final v in d.report!.footer!)
                                     DataCell(Text(
                                       Report.cell(v),
-                                      style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.total),
+                                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF38BDF8) : AppColors.total),
                                     )),
                                 ],
                               ),
@@ -122,4 +175,5 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ]);
         },
       );
+  }
 }

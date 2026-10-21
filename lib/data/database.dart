@@ -160,7 +160,9 @@ CREATE TABLE sync_queue (
       throw UnsupportedError('Database file backup is not supported in web browsers.');
     }
     final d = await db;
-    await d.execute('PRAGMA wal_checkpoint(FULL)');
+    try {
+      await d.rawQuery('PRAGMA wal_checkpoint(FULL)');
+    } catch (_) {}
     final dir = (await backupDir)!;
     final now = DateTime.now();
     String two(int n) => n.toString().padLeft(2, '0');

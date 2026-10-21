@@ -8,6 +8,7 @@ import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../core/dates.dart';
+import '../core/pdf_opener.dart';
 import '../data/models.dart';
 import '../data/repository.dart';
 import '../widgets/common.dart';
@@ -79,7 +80,10 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f) async {
   }
   final dateRangeStr = '${dmy(minD ?? now)}  to  ${dmy(maxD ?? now)}';
 
-  final headers = report.headers;
+  final headers = [
+    for (final h in report.headers)
+      if (h == 'Gpay/cheque/CN') 'Gpay/\ncheque/CN' else h,
+  ];
   final data = [
     for (final r in report.rows) [for (final v in r) Report.cell(v)],
   ];
@@ -94,14 +98,27 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f) async {
 
   final columnWidths = isDateRange
       ? const <int, pw.TableColumnWidth>{
-          0: pw.FixedColumnWidth(40),  // #
-          1: pw.FixedColumnWidth(85),  // Receipt No.
-          2: pw.FixedColumnWidth(85),  // Date
-          3: pw.FlexColumnWidth(3.2),  // Customer
-          4: pw.FixedColumnWidth(85),  // Cash
-          5: pw.FixedColumnWidth(105), // Gpay/cheque/CN
-          6: pw.FixedColumnWidth(95),  // Total
-          7: pw.FlexColumnWidth(1.5),  // Notes
+          0: pw.FixedColumnWidth(28),  // #
+          1: pw.FixedColumnWidth(66),  // Receipt No.
+          2: pw.FixedColumnWidth(66),  // Date
+          3: pw.FlexColumnWidth(2.6),  // Customer
+          4: pw.FixedColumnWidth(64),  // Cash
+          5: pw.FixedColumnWidth(68),  // Gpay/cheque/CN
+          6: pw.FixedColumnWidth(66),  // Total
+          7: pw.FixedColumnWidth(48),  // Notes
+        }
+      : null;
+
+  final headerAlignments = isDateRange
+      ? const <int, pw.AlignmentGeometry>{
+          0: pw.Alignment.center,
+          1: pw.Alignment.center,
+          2: pw.Alignment.center,
+          3: pw.Alignment.center,
+          4: pw.Alignment.center,
+          5: pw.Alignment.center,
+          6: pw.Alignment.center,
+          7: pw.Alignment.center,
         }
       : null;
 
@@ -120,7 +137,7 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f) async {
 
   doc.addPage(
     pw.MultiPage(
-      pageFormat: isDateRange ? PdfPageFormat.a4.landscape : PdfPageFormat.a4,
+      pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(28),
       header: (pw.Context ctx) => pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -136,26 +153,25 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f) async {
                   child: pw.Image(logoImage, fit: pw.BoxFit.contain),
                 )
               else
-                pw.Text('Oscar Pharma', style: pw.TextStyle(font: bold, fontSize: 18, color: PdfColor.fromHex('0F172A'))),
+                pw.Text('Oscar Pharma', style: pw.TextStyle(font: bold, fontSize: 20, color: PdfColor.fromHex('061D38'))),
               // Report Generated Badge Card
               pw.Container(
                 padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: pw.BoxDecoration(
                   color: PdfColor.fromHex('F0F7FF'),
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-                  border: pw.Border.all(color: PdfColor.fromHex('DCEAF7'), width: 1),
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
                 ),
                 child: pw.Row(
                   mainAxisSize: pw.MainAxisSize.min,
                   children: [
-                    pw.SvgImage(svg: _reportClockBadgeSvg, width: 20, height: 20),
+                    pw.SvgImage(svg: _reportClockBadgeSvg, width: 22, height: 22),
                     pw.SizedBox(width: 10),
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Text('Report Generated', style: pw.TextStyle(font: font, fontSize: 8, color: PdfColor.fromHex('64748B'))),
+                        pw.Text('Report Generated', style: pw.TextStyle(font: font, fontSize: 8.5, color: PdfColor.fromHex('64748B'))),
                         pw.SizedBox(height: 2),
-                        pw.Text('$genDate  |  $genTime', style: pw.TextStyle(font: bold, fontSize: 10.5, color: PdfColor.fromHex('0F172A'))),
+                        pw.Text('$genDate  |  $genTime', style: pw.TextStyle(font: bold, fontSize: 11, color: PdfColor.fromHex('0A1931'))),
                       ],
                     ),
                   ],
@@ -163,37 +179,36 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f) async {
               ),
             ],
           ),
-          pw.SizedBox(height: 12),
+          pw.SizedBox(height: 14),
 
           // 2. Report Title
           pw.Text(
             report.title,
             style: pw.TextStyle(
               font: bold,
-              fontSize: 18,
-              color: PdfColor.fromHex('0F172A'),
+              fontSize: 24,
+              color: PdfColor.fromHex('0A1931'),
             ),
           ),
-          pw.SizedBox(height: 8),
+          pw.SizedBox(height: 10),
 
           // 3. Date Range Filter Badge
           pw.Row(
             children: [
               pw.Container(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: pw.BoxDecoration(
                   color: PdfColor.fromHex('F0F7FF'),
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-                  border: pw.Border.all(color: PdfColor.fromHex('DCEAF7'), width: 1),
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
                 ),
                 child: pw.Row(
                   mainAxisSize: pw.MainAxisSize.min,
                   children: [
-                    pw.SvgImage(svg: _reportCalendarSvg, width: 14, height: 14),
+                    pw.SvgImage(svg: _reportCalendarSvg, width: 15, height: 15),
                     pw.SizedBox(width: 8),
                     pw.Text(
                       dateRangeStr,
-                      style: pw.TextStyle(font: bold, fontSize: 9.5, color: PdfColor.fromHex('0F172A')),
+                      style: pw.TextStyle(font: bold, fontSize: 10.5, color: PdfColor.fromHex('0A1931')),
                     ),
                   ],
                 ),
@@ -201,8 +216,8 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f) async {
             ],
           ),
           pw.SizedBox(height: 12),
-          pw.Container(height: 1, color: PdfColor.fromHex('CBD5E1')),
-          pw.SizedBox(height: 12),
+          pw.Container(height: 1.5, color: PdfColor.fromHex('063970')),
+          pw.SizedBox(height: 14),
         ],
       ),
       footer: (pw.Context ctx) => pw.Row(
@@ -213,49 +228,55 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f) async {
         ],
       ),
       build: (pw.Context ctx) => [
-        pw.TableHelper.fromTextArray(
-          headers: headers,
-          data: allRows,
-          columnWidths: columnWidths,
-          cellAlignments: alignments,
-          headerAlignments: alignments,
-          cellAlignment: pw.Alignment.centerLeft,
-          headerStyle: pw.TextStyle(font: bold, fontSize: 9.5, color: PdfColors.white),
-          headerDecoration: pw.BoxDecoration(color: PdfColor.fromHex('0B3558')),
-          cellStyle: pw.TextStyle(font: font, fontSize: 8.5),
-          cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-          border: pw.TableBorder.all(color: PdfColor.fromHex('E2E8F0'), width: 0.6),
-          textStyleBuilder: (col, cellData, rowNum) {
-            // Footer row
-            if (hasFooter && rowNum == allRows.length) {
-              if (cellData.startsWith('₹')) {
-                return pw.TextStyle(font: bold, fontSize: 11, color: PdfColor.fromHex('087A5B'));
-              }
-              if (col == 0) {
-                return pw.TextStyle(font: bold, fontSize: 10.5, color: PdfColor.fromHex('0F172A'));
-              }
-              return pw.TextStyle(font: bold, fontSize: 10, color: PdfColor.fromHex('64748B'));
-            }
-            // Data rows
-            if (isDateRange) {
-              if (col == 6) { // Total column
-                return pw.TextStyle(font: bold, fontSize: 9, color: PdfColor.fromHex('0F172A'));
-              }
-              if (col == 1) { // Receipt No
-                return pw.TextStyle(font: bold, fontSize: 8.5, color: PdfColor.fromHex('0F172A'));
-              }
-            }
-            return pw.TextStyle(font: font, fontSize: 8.5, color: PdfColor.fromHex('1E293B'));
-          },
-          cellDecoration: (col, cellData, rowNum) {
-            if (hasFooter && rowNum == allRows.length) {
-              return pw.BoxDecoration(color: PdfColor.fromHex('E6F5ED'));
-            }
-            if (rowNum % 2 == 1) {
-              return pw.BoxDecoration(color: PdfColor.fromHex('F8FAFC'));
-            }
-            return const pw.BoxDecoration(color: PdfColors.white);
-          },
+        pw.Container(
+          decoration: pw.BoxDecoration(
+            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+            border: pw.Border.all(color: PdfColor.fromHex('CBDDF0'), width: 1.2),
+          ),
+          child: pw.ClipRRect(
+            horizontalRadius: 10,
+            verticalRadius: 10,
+            child: pw.TableHelper.fromTextArray(
+              headers: headers,
+              data: allRows,
+              columnWidths: columnWidths,
+              cellAlignments: alignments,
+              headerAlignments: headerAlignments,
+              cellAlignment: pw.Alignment.centerLeft,
+              headerStyle: pw.TextStyle(font: bold, fontSize: 10.5, color: PdfColors.white),
+              headerDecoration: pw.BoxDecoration(color: PdfColor.fromHex('063970')),
+              headerPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+              cellStyle: pw.TextStyle(font: bold, fontSize: 11, color: PdfColor.fromHex('0A1931')),
+              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 8.5),
+              border: pw.TableBorder.all(color: PdfColor.fromHex('D5E3F2'), width: 0.8),
+              textStyleBuilder: (col, cellData, rowNum) {
+                // Footer row (last row)
+                if (hasFooter && rowNum == allRows.length) {
+                  if (col >= 4 && col <= 6) {
+                    return pw.TextStyle(font: bold, fontSize: 12, color: PdfColor.fromHex('047857'));
+                  }
+                  return pw.TextStyle(font: bold, fontSize: 12, color: PdfColor.fromHex('0A1931'));
+                }
+                // Data rows: Strong, bold, prominent text
+                if (isDateRange) {
+                  if (col == 6) { // Total column
+                    return pw.TextStyle(font: bold, fontSize: 11.5, color: PdfColor.fromHex('0A1931'));
+                  }
+                  if (col == 2) { // Date column
+                    return pw.TextStyle(font: bold, fontSize: 10, color: PdfColor.fromHex('0A1931'));
+                  }
+                  return pw.TextStyle(font: bold, fontSize: 11, color: PdfColor.fromHex('0A1931'));
+                }
+                return pw.TextStyle(font: bold, fontSize: 11, color: PdfColor.fromHex('0A1931'));
+              },
+              cellDecoration: (col, cellData, rowNum) {
+                if (hasFooter && rowNum == allRows.length) {
+                  return pw.BoxDecoration(color: PdfColor.fromHex('EAF7F4'));
+                }
+                return const pw.BoxDecoration(color: PdfColors.white);
+              },
+            ),
+          ),
         ),
       ],
     ),
@@ -264,24 +285,35 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f) async {
   return doc;
 }
 
-/// Builds a styled PDF for any report with Oscar Pharma branding and triggers download.
+/// Builds a styled PDF for any report with Oscar Pharma branding, saves it, and directly opens it in an external PDF viewer (e.g. Drive PDF viewer).
 Future<void> exportReportPdf(BuildContext context, String kind, Filters f) async {
   try {
     final report = await Repository.instance.buildReport(kind, f);
     final doc = await buildReportPdfDocument(report, f);
     final bytes = await doc.save();
     final filename = '${report.kind}_${isoDate(DateTime.now()).replaceAll('-', '')}.pdf';
-    final shared = await Printing.sharePdf(bytes: bytes, filename: filename);
-    if (!shared) {
-      await Share.shareXFiles(
-        [XFile.fromData(bytes, mimeType: 'application/pdf', name: filename)],
-        subject: '${report.title} - Oscar Pharma',
-      );
-    }
-    if (context.mounted) {
-      toast(context, 'PDF downloaded: $filename');
-    }
+    if (!context.mounted) return;
+    await openPdfWithExternalViewer(
+      context: context,
+      bytes: bytes,
+      filename: filename,
+      title: '${report.title} - Oscar Pharma',
+    );
   } catch (e) {
     if (context.mounted) toast(context, 'Export PDF failed: $e', error: true);
+  }
+}
+
+/// Directly opens the print preview dialog for the report.
+Future<void> printReportPdf(BuildContext context, String kind, Filters f) async {
+  try {
+    final report = await Repository.instance.buildReport(kind, f);
+    final doc = await buildReportPdfDocument(report, f);
+    await Printing.layoutPdf(
+      name: '${report.kind}_${isoDate(DateTime.now()).replaceAll('-', '')}.pdf',
+      onLayout: (_) => doc.save(),
+    );
+  } catch (e) {
+    if (context.mounted) toast(context, 'Print failed: $e', error: true);
   }
 }

@@ -12,7 +12,6 @@ import '../widgets/filter_bar.dart';
 import 'collection_form.dart';
 import 'receipt_screen.dart';
 import 'report_export.dart';
-import '../widgets/sync_status_widget.dart';
 
 const pageSize = 25;
 
@@ -42,7 +41,9 @@ class _CollectionHistoryState extends State<CollectionHistory> {
   }
 
   @override
-  Widget build(BuildContext context) => Loader<_H>(
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Loader<_H>(
         loader: _load,
         deps: (_f.q, _f.dateFrom, _f.dateTo, _f.shopId, _f.method, _page),
         builder: (context, h) {
@@ -83,13 +84,9 @@ class _CollectionHistoryState extends State<CollectionHistory> {
               ],
             ),
             const SizedBox(height: 12),
-            WideStatCard(
-              label: 'Total collection',
+            WideStatCard.totalCollection(
               value: inr(h.totals.total),
               sub: '${h.totals.count} record${h.totals.count == 1 ? '' : 's'} found',
-              icon: Icons.monetization_on_outlined,
-              iconColor: const Color(0xFF0284C7),
-              iconBg: const Color(0xFFE0F2FE),
             ),
             const SizedBox(height: 16),
 
@@ -108,11 +105,18 @@ class _CollectionHistoryState extends State<CollectionHistory> {
                     child: const Text('PDF', style: TextStyle(fontSize: 12.5)),
                   ),
                   GlassButton(
+                    onPressed: () => printReportPdf(context, 'date_range', _f),
+                    icon: Icons.print_outlined,
+                    accentColor: AppColors.textPrimary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: const Text('Print', style: TextStyle(fontSize: 12.5)),
+                  ),
+                  GlassButton(
                     onPressed: () => exportReport(context, 'date_range', _f),
                     icon: Icons.table_chart_outlined,
                     accentColor: AppColors.cash,
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: const Text('CSV', style: TextStyle(fontSize: 12.5)),
+                    child: const Text('Excel', style: TextStyle(fontSize: 12.5)),
                   ),
                 ],
               ),
@@ -141,10 +145,10 @@ class _CollectionHistoryState extends State<CollectionHistory> {
                                 width: 44,
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFE0F2FE),
+                                  color: isDark ? const Color(0x330284C7) : const Color(0xFFE0F2FE),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(Icons.receipt_long_outlined, color: Color(0xFF0284C7), size: 22),
+                                child: Icon(Icons.receipt_long_outlined, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7), size: 22),
                               ),
                               const SizedBox(width: 14),
                               Expanded(
@@ -156,22 +160,24 @@ class _CollectionHistoryState extends State<CollectionHistory> {
                                         Expanded(
                                           child: Text(
                                             '${h.rows[i].receiptNumber} · ${h.rows[i].shopName}',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.w700,
-                                              fontSize: 14.5,
-                                              color: Color(0xFF0F172A),
+                                              fontSize: 15,
+                                              color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        const SizedBox(width: 6),
-                                        SyncItemBadge(isPending: h.rows[i].isPendingSync),
                                       ],
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       dmy(h.rows[i].date),
-                                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 12.5, fontWeight: FontWeight.w500),
+                                      style: TextStyle(
+                                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                     const SizedBox(height: 6),
                                     Wrap(
@@ -182,7 +188,7 @@ class _CollectionHistoryState extends State<CollectionHistory> {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFE8F5E9),
+                                              color: isDark ? const Color(0x2E10B981) : const Color(0xFFE8F5E9),
                                               borderRadius: BorderRadius.circular(8),
                                             ),
                                             child: Text(
@@ -198,13 +204,13 @@ class _CollectionHistoryState extends State<CollectionHistory> {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFEFF6FF),
+                                              color: isDark ? const Color(0x333B82F6) : const Color(0xFFEFF6FF),
                                               borderRadius: BorderRadius.circular(8),
                                             ),
                                             child: Text(
                                               'Online: ${inr(h.rows[i].gpay + h.rows[i].cheque)}',
-                                              style: const TextStyle(
-                                                color: Color(0xFF3B82F6),
+                                              style: TextStyle(
+                                                color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF3B82F6),
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w700,
                                               ),
@@ -216,7 +222,11 @@ class _CollectionHistoryState extends State<CollectionHistory> {
                                       const SizedBox(height: 4),
                                       Text(
                                         h.rows[i].notes!,
-                                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5, fontStyle: FontStyle.italic),
+                                        style: TextStyle(
+                                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                          fontSize: 11.5,
+                                          fontStyle: FontStyle.italic,
+                                        ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -230,50 +240,37 @@ class _CollectionHistoryState extends State<CollectionHistory> {
                                 children: [
                                   Text(
                                     inr(h.rows[i].total),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 16,
-                                      color: Color(0xFF0284C7),
+                                      color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                                       letterSpacing: -0.3,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        tooltip: 'Receipt PDF',
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        icon: const Icon(Icons.picture_as_pdf_outlined, size: 18, color: Color(0xFF0284C7)),
-                                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReceiptScreen(collectionId: h.rows[i].id!))),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      PopupMenuButton<String>(
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        icon: const Icon(Icons.more_vert, size: 20, color: Color(0xFF64748B)),
-                                        onSelected: (v) async {
-                                          if (v == 'receipt') {
-                                            await Navigator.push(context, MaterialPageRoute(builder: (_) => ReceiptScreen(collectionId: h.rows[i].id!)));
-                                          } else if (v == 'edit') {
-                                            await Navigator.push(context, MaterialPageRoute(builder: (_) => CollectionForm(existing: h.rows[i])));
-                                          } else if (v == 'delete') {
-                                            await showConfirmDelete(context, 'collection ${h.rows[i].receiptNumber}', () async {
-                                              await Repository.instance.deleteCollection(h.rows[i].id!);
-                                              if (context.mounted) {
-                                                context.read<AppState>().changed();
-                                                toast(context, 'Collection ${h.rows[i].receiptNumber} deleted.');
-                                              }
-                                            });
+                                  PopupMenuButton<String>(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    icon: Icon(Icons.more_vert, size: 20, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                                    onSelected: (v) async {
+                                      if (v == 'receipt') {
+                                        await Navigator.push(context, MaterialPageRoute(builder: (_) => ReceiptScreen(collectionId: h.rows[i].id!)));
+                                      } else if (v == 'edit') {
+                                        await Navigator.push(context, MaterialPageRoute(builder: (_) => CollectionForm(existing: h.rows[i])));
+                                      } else if (v == 'delete') {
+                                        await showConfirmDelete(context, 'collection ${h.rows[i].receiptNumber}', () async {
+                                          await Repository.instance.deleteCollection(h.rows[i].id!);
+                                          if (context.mounted) {
+                                            context.read<AppState>().changed();
+                                            toast(context, 'Collection ${h.rows[i].receiptNumber} deleted.');
                                           }
-                                        },
-                                        itemBuilder: (_) => const [
-                                          PopupMenuItem(value: 'receipt', child: Text('Receipt / PDF')),
-                                          PopupMenuItem(value: 'edit', child: Text('Edit')),
-                                          PopupMenuItem(value: 'delete', child: Text('Delete')),
-                                        ],
-                                      ),
+                                        });
+                                      }
+                                    },
+                                    itemBuilder: (_) => const [
+                                      PopupMenuItem(value: 'receipt', child: Text('Receipt / PDF')),
+                                      PopupMenuItem(value: 'edit', child: Text('Edit')),
+                                      PopupMenuItem(value: 'delete', child: Text('Delete')),
                                     ],
                                   ),
                                 ],
@@ -283,7 +280,7 @@ class _CollectionHistoryState extends State<CollectionHistory> {
                         ),
                       ),
                       if (i < h.rows.length - 1)
-                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        Divider(height: 1, color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
                     ],
                   ],
                 ),
@@ -293,4 +290,5 @@ class _CollectionHistoryState extends State<CollectionHistory> {
           ]);
         },
       );
+  }
 }

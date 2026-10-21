@@ -11,7 +11,9 @@ class Series {
   const Series(this.label, this.color, this.paise);
 }
 
-Widget _legend(List<(String, Color)> items) => Wrap(
+Widget _legend(BuildContext context, List<(String, Color)> items) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return Wrap(
       spacing: 16,
       runSpacing: 6,
       children: [
@@ -33,9 +35,9 @@ Widget _legend(List<(String, Color)> items) => Wrap(
               const SizedBox(width: 6),
               Text(
                 l,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: isDark ? const Color(0xFFCBD5E1) : AppColors.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -43,6 +45,7 @@ Widget _legend(List<(String, Color)> items) => Wrap(
           ),
       ],
     );
+}
 
 String _short(double v) {
   final a = v.abs();
@@ -71,6 +74,7 @@ class BarsChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final n = labels.length;
     double maxY = 0, minY = 0;
     for (var i = 0; i < n; i++) {
@@ -150,7 +154,7 @@ class BarsChart extends StatelessWidget {
               gridData: FlGridData(
                 drawVerticalLine: false,
                 getDrawingHorizontalLine: (_) => FlLine(
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
                   strokeWidth: 1,
                 ),
               ),
@@ -164,7 +168,7 @@ class BarsChart extends StatelessWidget {
                     reservedSize: 46,
                     getTitlesWidget: (v, m) => Text(
                       '₹${_short(v)}',
-                      style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+                      style: TextStyle(fontSize: 10, color: isDark ? const Color(0xFF64748B) : AppColors.textMuted),
                     ),
                   ),
                 ),
@@ -179,7 +183,7 @@ class BarsChart extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
                           labels[i],
-                          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 10, color: isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary),
                           overflow: TextOverflow.ellipsis,
                         ),
                       );
@@ -308,7 +312,7 @@ class BarsChart extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _legend([for (final b in bars) (b.label, b.color), if (line != null) (line!.label, line!.color)]),
+        _legend(context, [for (final b in bars) (b.label, b.color), if (line != null) (line!.label, line!.color)]),
         const SizedBox(height: 12),
         SingleChildScrollView(scrollDirection: Axis.horizontal, child: chart),
       ],
@@ -359,7 +363,7 @@ class DoughnutChart extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        _legend([for (var i = 0; i < labels.length; i++) ('${labels[i]} · ${inr(paise[i])}', colors[i % colors.length])]),
+        _legend(context, [for (var i = 0; i < labels.length; i++) ('${labels[i]} · ${inr(paise[i])}', colors[i % colors.length])]),
       ],
     );
   }

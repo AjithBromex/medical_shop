@@ -58,7 +58,17 @@ class _FilterBarState extends State<FilterBar> {
                 decoration: InputDecoration(
                   labelText: widget.searchHint,
                   prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _q.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _q.clear();
+                            _set(f.copyWith(q: null));
+                          },
+                        )
+                      : null,
                 ),
+                onChanged: (v) => _set(f.copyWith(q: v.trim().isEmpty ? null : v.trim())),
                 onSubmitted: (v) => _set(f.copyWith(q: v.trim().isEmpty ? null : v.trim())),
               ),
               w: 230,
@@ -70,7 +80,7 @@ class _FilterBarState extends State<FilterBar> {
               initialValue: f.shopId,
               isExpanded: true,
               decoration: const InputDecoration(labelText: 'Medical shop'),
-              dropdownColor: Colors.white,
+              dropdownColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
               items: [
                 const DropdownMenuItem<int?>(value: null, child: Text('All shops')),
                 for (final s in widget.shops)
@@ -88,7 +98,7 @@ class _FilterBarState extends State<FilterBar> {
                     ? 'gpay_cheque'
                     : f.method,
                 decoration: const InputDecoration(labelText: 'Payment method'),
-                dropdownColor: Colors.white,
+                dropdownColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
                 items: const [
                   DropdownMenuItem<String?>(value: null, child: Text('All methods')),
                   DropdownMenuItem(value: 'cash', child: Text('Cash')),
@@ -104,7 +114,7 @@ class _FilterBarState extends State<FilterBar> {
                 initialValue: widget.categories.contains(f.category) ? f.category : null,
                 isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Category'),
-                dropdownColor: Colors.white,
+                dropdownColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
                 items: [
                   const DropdownMenuItem<String?>(value: null, child: Text('All categories')),
                   for (final c in widget.categories) DropdownMenuItem<String?>(value: c, child: Text(c)),
@@ -146,44 +156,48 @@ class Pager extends StatelessWidget {
   const Pager({super.key, required this.page, required this.pages, required this.onPage});
 
   @override
-  Widget build(BuildContext context) => pages <= 1
-      ? const SizedBox.shrink()
-      : Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          child: Center(
-            child: GlassContainer(
-              blur: 14,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              borderRadius: BorderRadius.circular(20),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    onPressed: page > 1 ? () => onPage(page - 1) : null,
-                    icon: const Icon(Icons.chevron_left, color: AppColors.textPrimary),
-                    tooltip: 'Previous page',
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text(
-                      'Page $page of $pages',
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13.5,
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFF8FAFC) : AppColors.textPrimary;
+    return pages <= 1
+        ? const SizedBox.shrink()
+        : Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Center(
+              child: GlassContainer(
+                blur: 14,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                borderRadius: BorderRadius.circular(20),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      onPressed: page > 1 ? () => onPage(page - 1) : null,
+                      icon: Icon(Icons.chevron_left, color: textColor),
+                      tooltip: 'Previous page',
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        'Page $page of $pages',
+                        style: TextStyle(
+                          color: textColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.5,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: page < pages ? () => onPage(page + 1) : null,
-                    icon: const Icon(Icons.chevron_right, color: AppColors.textPrimary),
-                    tooltip: 'Next page',
-                  ),
-                ],
+                    IconButton(
+                      onPressed: page < pages ? () => onPage(page + 1) : null,
+                      icon: Icon(Icons.chevron_right, color: textColor),
+                      tooltip: 'Next page',
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
+          );
+  }
 }
 
 Future<void> showConfirmDelete(BuildContext context, String what, Future<void> Function() action) async {

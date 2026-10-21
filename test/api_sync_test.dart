@@ -20,11 +20,11 @@ void main() {
   });
 
   test('MedicalShop model creates and tracks syncStatus', () {
-    final s1 = MedicalShop(id: 1, name: 'Apollo Pharmacy', phone: '9876543210', address: 'Main Road', isActive: true);
+    const s1 = MedicalShop(id: 1, name: 'Apollo Pharmacy', phone: '9876543210', address: 'Main Road', isActive: true);
     expect(s1.syncStatus, 'synced');
     expect(s1.isPendingSync, isFalse);
 
-    final s2 = MedicalShop(id: 2, name: 'Care Pharmacy', syncStatus: 'pending');
+    const s2 = MedicalShop(id: 2, name: 'Care Pharmacy', syncStatus: 'pending');
     expect(s2.syncStatus, 'pending');
     expect(s2.isPendingSync, isTrue);
     expect(s2.toMap()['sync_status'], 'pending');

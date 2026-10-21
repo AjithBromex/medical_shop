@@ -45,13 +45,20 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   }
 
   Future<void> _openForm({Expense? existing, required List<String> categories}) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     await showDialog(
       context: context,
       barrierDismissible: true,
-      barrierColor: const Color(0x730F172A),
+      barrierColor: isDark ? const Color(0x99000000) : const Color(0x730F172A),
       builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            width: 1.2,
+          ),
+        ),
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         surfaceTintColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
         clipBehavior: Clip.antiAlias,
@@ -63,22 +70,30 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   }
 
   Future<void> _addCategory() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final c = TextEditingController();
     final name = await showDialog<String>(
       context: context,
       builder: (d) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: AlertDialog(
-          backgroundColor: Colors.white.withValues(alpha: 0.96),
+          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white.withValues(alpha: 0.96),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: AppColors.border, width: 1.2),
+            side: BorderSide(color: isDark ? const Color(0xFF334155) : AppColors.border, width: 1.2),
           ),
-          title: const Text('New expense category', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+          title: Text(
+            'New expense category',
+            style: TextStyle(
+              color: isDark ? const Color(0xFFF8FAFC) : AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           content: TextField(
             controller: c,
             autofocus: true,
             maxLength: 60,
+            style: TextStyle(color: isDark ? const Color(0xFFF8FAFC) : AppColors.textPrimary),
             decoration: const InputDecoration(labelText: 'Category name'),
           ),
           actions: [
@@ -140,7 +155,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 amount: inr(e.todayTotal),
                 title: 'Today’s expenses',
                 subtext: 'Recorded today (${dmy(today())})',
-                icon: Icons.receipt_long_outlined,
+                icon: Icons.confirmation_number_outlined,
                 gradientColors: const [Color(0xFF881337), Color(0xFFE11D48)],
                 badgeText: 'TODAY’S\nEXPENSES',
               ),
@@ -153,7 +168,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     child: MiniStatCard(
                       label: _f.isEmpty ? 'All expenses' : 'Filtered total',
                       value: inr(rangeTotal),
-                      icon: Icons.account_balance_wallet_outlined,
+                      icon: Icons.confirmation_number_outlined,
                       iconColor: const Color(0xFFF43F5E),
                       iconBg: const Color(0xFFFFE4E6),
                       sub: '${e.count} entries',
@@ -204,7 +219,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   icon: Icons.table_chart_outlined,
                   accentColor: AppColors.cash,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: const Text('Export CSV', style: TextStyle(fontSize: 12.5)),
+                  child: const Text('Export Excel', style: TextStyle(fontSize: 12.5)),
                 ),
               ]),
 
@@ -228,7 +243,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
               const SizedBox(height: 10),
               if (e.rows.isEmpty)
                 const GlassCard(
-                  child: EmptyState('No expenses match these filters.', icon: Icons.receipt_long),
+                  child: EmptyState('No expenses match these filters.', icon: Icons.confirmation_number_outlined),
                 )
               else
                 GlassCard(
@@ -245,10 +260,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                 width: 44,
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFFE4E6),
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? const Color(0x33F43F5E)
+                                      : const Color(0xFFFFE4E6),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(Icons.receipt_outlined, color: Color(0xFFF43F5E), size: 22),
+                                child: const Icon(Icons.confirmation_number_outlined, color: Color(0xFFF43F5E), size: 22),
                               ),
                               const SizedBox(width: 14),
                               Expanded(
@@ -260,10 +277,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                         Expanded(
                                           child: Text(
                                             e.rows[i].category,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.w700,
                                               fontSize: 14.5,
-                                              color: Color(0xFF0F172A),
+                                              color: Theme.of(context).brightness == Brightness.dark
+                                                  ? const Color(0xFFF8FAFC)
+                                                  : const Color(0xFF0F172A),
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -275,13 +294,25 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                     const SizedBox(height: 4),
                                     Text(
                                       '${e.rows[i].displayId} • ${dmy(e.rows[i].date)}',
-                                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 12.5, fontWeight: FontWeight.w500),
+                                      style: TextStyle(
+                                        color: Theme.of(context).brightness == Brightness.dark
+                                            ? const Color(0xFF94A3B8)
+                                            : const Color(0xFF64748B),
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                     if (e.rows[i].notes != null && e.rows[i].notes!.isNotEmpty) ...[
                                       const SizedBox(height: 4),
                                       Text(
                                         e.rows[i].notes!,
-                                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5, fontStyle: FontStyle.italic),
+                                        style: TextStyle(
+                                          color: Theme.of(context).brightness == Brightness.dark
+                                              ? const Color(0xFF94A3B8)
+                                              : const Color(0xFF64748B),
+                                          fontSize: 11.5,
+                                          fontStyle: FontStyle.italic,
+                                        ),
                                       ),
                                     ],
                                   ],
@@ -304,7 +335,13 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                   PopupMenuButton<String>(
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
-                                    icon: const Icon(Icons.more_vert, size: 20, color: Color(0xFF64748B)),
+                                    icon: Icon(
+                                      Icons.more_vert,
+                                      size: 20,
+                                      color: Theme.of(context).brightness == Brightness.dark
+                                          ? const Color(0xFF94A3B8)
+                                          : const Color(0xFF64748B),
+                                    ),
                                     onSelected: (v) async {
                                       if (v == 'edit') {
                                         _openForm(existing: e.rows[i], categories: e.categories);
@@ -329,7 +366,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                           ),
                         ),
                         if (i < e.rows.length - 1)
-                          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                          Divider(
+                            height: 1,
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? const Color(0xFF334155)
+                                : const Color(0xFFE2E8F0),
+                          ),
                       ],
                     ],
                   ),
@@ -405,6 +447,11 @@ class _ExpenseFormState extends State<_ExpenseForm> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? const Color(0xFFF8FAFC) : AppColors.textPrimary;
+    final fieldBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final borderCol = isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1);
+
     final cats = {...widget.categories, if (widget.existing != null) widget.existing!.category}.toList();
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 20, 20, 24),
@@ -417,15 +464,15 @@ class _ExpenseFormState extends State<_ExpenseForm> {
             children: [
               Text(
                 widget.existing == null ? 'Add expense' : 'Edit ${widget.existing!.displayId}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: textPrimary,
                   letterSpacing: -0.3,
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8), size: 22),
+                icon: Icon(Icons.close_rounded, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), size: 22),
                 onPressed: () => Navigator.pop(context),
                 splashRadius: 20,
                 padding: EdgeInsets.zero,
@@ -442,27 +489,27 @@ class _ExpenseFormState extends State<_ExpenseForm> {
           ),
           const SizedBox(height: 14),
           DropdownButtonFormField<String>(
-            value: cats.contains(_category) ? _category : null,
-            dropdownColor: Colors.white,
-            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary, size: 24),
-            style: const TextStyle(
+            initialValue: cats.contains(_category) ? _category : null,
+            dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+            icon: Icon(Icons.keyboard_arrow_down_rounded, color: isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary, size: 24),
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              color: textPrimary,
             ),
             decoration: InputDecoration(
               labelText: 'Category',
-              prefixIcon: const Icon(
+              prefixIcon: Icon(
                 Icons.category_outlined,
-                color: AppColors.textPrimary,
+                color: isDark ? const Color(0xFFFB7185) : AppColors.expenses,
                 size: 22,
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: fieldBg,
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                borderSide: BorderSide(color: borderCol, width: 1.2),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -470,7 +517,7 @@ class _ExpenseFormState extends State<_ExpenseForm> {
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                borderSide: BorderSide(color: borderCol, width: 1.2),
               ),
             ),
             items: [
@@ -486,24 +533,24 @@ class _ExpenseFormState extends State<_ExpenseForm> {
           TextField(
             controller: _amount,
             keyboardType: const TextInputType.numberWithOptions(decimal: false),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              color: textPrimary,
             ),
             decoration: InputDecoration(
               labelText: 'Amount',
-              prefixIcon: const Icon(
+              prefixIcon: Icon(
                 Icons.currency_rupee_rounded,
-                color: AppColors.textPrimary,
+                color: isDark ? const Color(0xFFFB7185) : AppColors.expenses,
                 size: 20,
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: fieldBg,
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                borderSide: BorderSide(color: borderCol, width: 1.2),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -511,7 +558,7 @@ class _ExpenseFormState extends State<_ExpenseForm> {
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                borderSide: BorderSide(color: borderCol, width: 1.2),
               ),
             ),
           ),
@@ -520,16 +567,16 @@ class _ExpenseFormState extends State<_ExpenseForm> {
             controller: _notes,
             maxLines: 2,
             maxLength: 500,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              color: textPrimary,
             ),
             decoration: InputDecoration(
               labelText: 'Notes (optional)',
-              prefixIcon: const Icon(
+              prefixIcon: Icon(
                 Icons.notes_rounded,
-                color: AppColors.textPrimary,
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                 size: 22,
               ),
               counterStyle: const TextStyle(
@@ -539,10 +586,10 @@ class _ExpenseFormState extends State<_ExpenseForm> {
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: fieldBg,
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                borderSide: BorderSide(color: borderCol, width: 1.2),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -550,7 +597,7 @@ class _ExpenseFormState extends State<_ExpenseForm> {
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                borderSide: BorderSide(color: borderCol, width: 1.2),
               ),
             ),
           ),

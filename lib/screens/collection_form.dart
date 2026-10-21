@@ -104,13 +104,22 @@ class _CollectionFormState extends State<CollectionForm> {
     final repo = Repository.instance;
     final errors = <String>[];
 
-    final receipt = _receipt.text.trim();
+    var receipt = _receipt.text.trim();
     if (receipt.isEmpty) {
       errors.add('Receipt number is required.');
-    } else if (receipt.length > 40) {
-      errors.add('Receipt number can be at most 40 characters.');
-    } else if (!RegExp(r'^[#A-Za-z0-9][A-Za-z0-9\-_/.# ]*$').hasMatch(receipt)) {
-      errors.add('Receipt number may only contain letters, numbers, #, and - _ / .');
+    } else {
+      // Auto-format standard numeric receipts to 5 digits (#00001 - #99999)
+      final numMatch = RegExp(r'^(#?)(\d+)$').firstMatch(receipt);
+      if (numMatch != null) {
+        final val = int.tryParse(numMatch.group(2)!) ?? 0;
+        receipt = '#${val.toString().padLeft(5, '0')}';
+        _receipt.text = receipt;
+      }
+      if (receipt.length > 40) {
+        errors.add('Receipt number can be at most 40 characters.');
+      } else if (!RegExp(r'^[#A-Za-z0-9][A-Za-z0-9\-_/.# ]*$').hasMatch(receipt)) {
+        errors.add('Receipt number may only contain letters, numbers, #, and - _ / .');
+      }
     }
 
     MedicalShop? shop;
@@ -213,18 +222,13 @@ class _CollectionFormState extends State<CollectionForm> {
     }
   }
 
-  Widget _amount(TextEditingController c, String label, IconData icon, Color color) => TextField(
-        controller: c,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        decoration: InputDecoration(labelText: label, prefixText: '₹ ', prefixIcon: Icon(icon, color: color)),
-      );
-
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (!_loaded) {
-      return const Scaffold(
-        backgroundColor: AppColors.bgDark,
-        body: Center(child: CircularProgressIndicator(color: AppColors.total)),
+      return Scaffold(
+        backgroundColor: isDark ? const Color(0xFF0B132B) : AppColors.bgDark,
+        body: const Center(child: CircularProgressIndicator(color: AppColors.total)),
       );
     }
     final total = _safe(_cash) + _safe(_gpayCheque);
@@ -259,7 +263,8 @@ class _CollectionFormState extends State<CollectionForm> {
         amount: inr(total),
         title: 'Total collection',
         subtext: 'Cash: ${inr(_safe(_cash))}  •  Gpay/cheque/CN: ${inr(_safe(_gpayCheque))}',
-        icon: Icons.receipt_long_rounded,
+        icon: Icons.monetization_on_outlined,
+        gradientColors: const [Color(0xFF0284C7), Color(0xFF0EA5E9)],
         badgeText: 'LIVE\nTOTAL',
       ),
       const SizedBox(height: 16),
@@ -364,19 +369,20 @@ class _CollectionFormState extends State<CollectionForm> {
                 );
               },
               optionsViewBuilder: (context, onSelected, options) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
                 return Align(
                   alignment: Alignment.topLeft,
                   child: Material(
                     elevation: 10,
                     borderRadius: BorderRadius.circular(16),
-                    color: Colors.white,
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
                     child: Container(
                       width: 340,
                       constraints: const BoxConstraints(maxHeight: 280),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.border, width: 1.2),
+                        border: Border.all(color: isDark ? const Color(0xFF334155) : AppColors.border, width: 1.2),
                       ),
                       child: ListView.builder(
                         padding: const EdgeInsets.symmetric(vertical: 6),
@@ -392,20 +398,24 @@ class _CollectionFormState extends State<CollectionForm> {
                               width: 34,
                               height: 34,
                               decoration: BoxDecoration(
-                                color: isSelected ? const Color(0xFFE0F2FE) : const Color(0xFFF1F5F9),
+                                color: isSelected
+                                    ? (isDark ? const Color(0x330284C7) : const Color(0xFFE0F2FE))
+                                    : (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9)),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
                                 Icons.storefront_outlined,
                                 size: 18,
-                                color: isSelected ? AppColors.total : const Color(0xFF64748B),
+                                color: isSelected ? AppColors.total : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                               ),
                             ),
                             title: Text(
                               s.name + (s.isActive ? '' : ' (inactive)'),
                               style: TextStyle(
                                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                color: isSelected ? AppColors.total : AppColors.textPrimary,
+                                color: isSelected
+                                    ? AppColors.total
+                                    : (isDark ? const Color(0xFFF8FAFC) : AppColors.textPrimary),
                               ),
                             ),
                             onTap: () => onSelected(s),
@@ -524,8 +534,21 @@ class _CollectionFormState extends State<CollectionForm> {
 
     return _editing
         ? Scaffold(
-            backgroundColor: AppColors.bgDark,
-            appBar: AppBar(title: Text('Edit ${widget.existing!.receiptNumber}')),
+            backgroundColor: isDark ? const Color(0xFF0B132B) : AppColors.bgDark,
+            appBar: AppBar(
+              title: Text(
+                'Edit ${widget.existing!.receiptNumber}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? const Color(0xFFF8FAFC) : AppColors.textPrimary,
+                ),
+              ),
+              backgroundColor: isDark ? const Color(0xFF0B132B) : AppColors.bgDark,
+              elevation: 0,
+              iconTheme: IconThemeData(
+                color: isDark ? const Color(0xFFF8FAFC) : AppColors.textPrimary,
+              ),
+            ),
             body: body,
           )
         : body;

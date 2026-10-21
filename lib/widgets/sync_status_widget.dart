@@ -4,7 +4,6 @@ import '../core/theme.dart';
 import '../data/api_service.dart';
 import '../state/app_state.dart';
 import 'common.dart';
-import 'glass.dart';
 
 class SyncStatusHeaderButton extends StatelessWidget {
   final bool compact;
@@ -40,7 +39,7 @@ class SyncStatusHeaderButton extends StatelessWidget {
       color = AppColors.textSecondary;
     } else {
       icon = const Icon(Icons.cloud_done_rounded, size: 19, color: AppColors.gpay);
-      label = 'Saved to Atlas';
+      label = 'Backed up';
       color = AppColors.gpay;
     }
 
@@ -110,25 +109,29 @@ class SyncItemBadge extends StatelessWidget {
       );
     }
 
-    return Tooltip(
-      message: 'Saved to MongoDB Atlas',
-      child: Icon(Icons.cloud_done_rounded, size: 14, color: AppColors.gpay.withValues(alpha: 0.8)),
-    );
+    return const SizedBox.shrink();
   }
 }
 
 void showCloudSyncSheet(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
     builder: (ctx) {
       final state = ctx.watch<AppState>();
+      final isUpToDate = state.isOnline && state.pendingSyncCount == 0;
+
       return Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: [
-            BoxShadow(color: Color(0x1F0F172A), blurRadius: 24, offset: Offset(0, -4)),
+            BoxShadow(
+              color: isDark ? const Color(0x33000000) : const Color(0x1F0F172A),
+              blurRadius: 24,
+              offset: const Offset(0, -4),
+            ),
           ],
         ),
         padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(ctx).padding.bottom + 20),
@@ -141,30 +144,41 @@ void showCloudSyncSheet(BuildContext context) {
                 width: 40,
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(color: AppColors.borderStrong, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF475569) : AppColors.borderStrong,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
             Row(
               children: [
                 const Icon(Icons.cloud_sync_rounded, color: AppColors.total, size: 24),
                 const SizedBox(width: 10),
-                const Text(
-                  'Cloud Synchronization',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                Text(
+                  'Cloud Backup & Sync',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : AppColors.textPrimary,
+                  ),
                 ),
                 const Spacer(),
-                IconButton(icon: const Icon(Icons.close, size: 20), onPressed: () => Navigator.pop(ctx)),
+                IconButton(
+                  icon: Icon(Icons.close, size: 20, color: isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.bgDark,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.border),
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
@@ -173,80 +187,60 @@ void showCloudSyncSheet(BuildContext context) {
                         height: 10,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: state.isOnline ? AppColors.gpay : Colors.red,
+                          color: isUpToDate
+                              ? AppColors.gpay
+                              : (state.isOnline ? Colors.amber.shade700 : const Color(0xFF94A3B8)),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
                       Text(
-                        state.isOnline ? 'Connected to Hosted Backend' : 'Offline / Server Unreachable',
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                        isUpToDate
+                            ? 'All Data Backed Up'
+                            : (state.isOnline
+                                ? '${state.pendingSyncCount} changes uploading...'
+                                : 'Working Offline'),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Text('Backend URL: ', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                      Expanded(
-                        child: Text(
-                          ApiService.instance.baseUrl,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Text('Offline Queue: ', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                      Text(
-                        state.pendingSyncCount == 0
-                            ? '0 items (All data in Atlas)'
-                            : '${state.pendingSyncCount} items waiting to sync',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: state.pendingSyncCount == 0 ? AppColors.gpay : Colors.amber.shade800,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    isUpToDate
+                        ? 'Your collections, expenses, and customer records are safely backed up.'
+                        : (state.isOnline
+                            ? 'Backing up your latest records to the cloud.'
+                            : 'All records are saved securely on your device and will back up automatically once connected to the internet.'),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      height: 1.35,
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: GlassButton(
-                    onPressed: state.isSyncing
-                        ? null
-                        : () async {
-                            await state.triggerSync();
-                            if (ctx.mounted) {
-                              toast(ctx, state.isOnline ? 'Synced with MongoDB Atlas' : 'Sync attempt failed - offline');
-                            }
-                          },
-                    icon: Icons.refresh_rounded,
-                    accentColor: AppColors.total,
-                    isPrimary: true,
-                    child: Text(state.isSyncing ? 'Syncing...' : 'Sync Now'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: GlassButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      showConfigureServerDialog(context);
-                    },
-                    icon: Icons.settings_outlined,
-                    accentColor: AppColors.cash,
-                    child: const Text('Server Settings'),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: GlassButton(
+                onPressed: state.isSyncing
+                    ? null
+                    : () async {
+                        await state.triggerSync();
+                        if (ctx.mounted) {
+                          toast(ctx, state.isOnline ? 'Backup updated successfully.' : 'Working offline. Saved locally.');
+                        }
+                      },
+                icon: Icons.refresh_rounded,
+                accentColor: AppColors.total,
+                isPrimary: true,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                child: Text(state.isSyncing ? 'Syncing...' : 'Sync Now', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+              ),
             ),
           ],
         ),

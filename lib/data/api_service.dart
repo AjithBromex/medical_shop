@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'models.dart';
@@ -74,7 +73,7 @@ class ApiService {
   // ------------------------------------------------------------- Health
   Future<bool> checkHealth() async {
     try {
-      final healthUri = Uri.parse(_baseUrl.replaceAll(RegExp(r'/api/?$'), '') + '/health');
+      final healthUri = Uri.parse('${_baseUrl.replaceAll(RegExp(r'/api/?$'), '')}/health');
       final res = await http.get(healthUri).timeout(const Duration(seconds: 4));
       return res.statusCode == 200;
     } catch (_) {

@@ -48,27 +48,47 @@ void toast(BuildContext context, String message, {bool error = false}) {
 }
 
 Future<bool> confirm(BuildContext context, String title, String message, {String action = 'Delete'}) async {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
   final r = await showDialog<bool>(
     context: context,
     builder: (c) => BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
       child: AlertDialog(
-        backgroundColor: Colors.white.withValues(alpha: 0.96),
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white.withValues(alpha: 0.96),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.border, width: 1.2),
+          side: BorderSide(
+            color: isDark ? const Color(0xFF334155) : AppColors.border,
+            width: 1.2,
+          ),
         ),
-        title: Text(title, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
-        content: Text(message, style: const TextStyle(color: AppColors.textSecondary)),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isDark ? const Color(0xFFF8FAFC) : AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Text(
+          message,
+          style: TextStyle(
+            color: isDark ? const Color(0xFFCBD5E1) : AppColors.textSecondary,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(c, false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary,
+              ),
+            ),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: action == 'Delete' ? AppColors.expenses : AppColors.total,
-              foregroundColor: action == 'Delete' ? Colors.white : Colors.black,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () => Navigator.pop(c, true),
@@ -169,23 +189,23 @@ class HeroStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(22),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: gradientColors ?? const [Color(0xFF0C4A6E), Color(0xFF0284C7)],
+              colors: gradientColors ?? const [Color(0xFF07558A), Color(0xFF0276B9)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(22),
             boxShadow: [
               BoxShadow(
-                color: (gradientColors?.first ?? const Color(0xFF0284C7)).withValues(alpha: 0.25),
+                color: (gradientColors?.first ?? const Color(0xFF07558A)).withValues(alpha: 0.3),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -194,17 +214,17 @@ class HeroStatCard extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 58,
-                height: 58,
+                width: 62,
+                height: 62,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(
                     color: Colors.white.withValues(alpha: 0.28),
                     width: 1.2,
                   ),
                 ),
-                child: Icon(icon, color: Colors.white, size: 28),
+                child: Icon(icon, color: Colors.white, size: 30),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -294,8 +314,9 @@ class MiniStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: Colors.white,
+      color: isDark ? const Color(0xFF1E293B) : Colors.white,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
@@ -303,14 +324,14 @@ class MiniStatCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
-            boxShadow: const [
+            border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0), width: 1.2),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x0A0F172A),
+                color: isDark ? const Color(0x33000000) : const Color(0x0A0F172A),
                 blurRadius: 10,
-                offset: Offset(0, 3),
+                offset: const Offset(0, 3),
               ),
             ],
           ),
@@ -321,7 +342,7 @@ class MiniStatCard extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: iconBg,
+                  color: isDark ? iconBg.withValues(alpha: 0.18) : iconBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: iconColor, size: 22),
@@ -329,10 +350,10 @@ class MiniStatCard extends StatelessWidget {
               const SizedBox(height: 14),
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF64748B),
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -343,10 +364,10 @@ class MiniStatCard extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
+                    color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
                     letterSpacing: -0.4,
                   ),
                 ),
@@ -355,10 +376,10 @@ class MiniStatCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   sub!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF94A3B8),
+                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
                   ),
                 ),
               ],
@@ -379,6 +400,9 @@ class WideStatCard extends StatelessWidget {
   final Color iconColor;
   final Color iconBg;
   final VoidCallback? onTap;
+  final Gradient? gradient;
+  final Color? backgroundColor;
+  final bool isDark;
 
   const WideStatCard({
     super.key,
@@ -389,28 +413,60 @@ class WideStatCard extends StatelessWidget {
     required this.iconColor,
     required this.iconBg,
     this.onTap,
+    this.gradient,
+    this.backgroundColor,
+    this.isDark = false,
   });
+
+  /// Signature vibrant sky-blue gradient card matching the Home Page Total Collection
+  factory WideStatCard.totalCollection({
+    Key? key,
+    required String value,
+    String? sub,
+    VoidCallback? onTap,
+    String label = 'Total collection',
+  }) {
+    return WideStatCard(
+      key: key,
+      label: label,
+      value: value,
+      sub: sub,
+      icon: Icons.monetization_on_outlined,
+      iconColor: Colors.white,
+      iconBg: Colors.white.withValues(alpha: 0.22),
+      gradient: const LinearGradient(
+        colors: [Color(0xFF0284C7), Color(0xFF0EA5E9)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      isDark: true,
+      onTap: onTap,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final themeIsDark = Theme.of(context).brightness == Brightness.dark;
+    final effectiveIsDark = isDark || themeIsDark;
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
-            boxShadow: const [
+            color: gradient == null ? (backgroundColor ?? (themeIsDark ? const Color(0xFF1E293B) : Colors.white)) : null,
+            gradient: gradient,
+            borderRadius: BorderRadius.circular(20),
+            border: isDark ? null : Border.all(color: themeIsDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0), width: 1.2),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x0A0F172A),
-                blurRadius: 10,
-                offset: Offset(0, 3),
+                color: isDark ? const Color(0x330284C7) : (themeIsDark ? const Color(0x33000000) : const Color(0x0A0F172A)),
+                blurRadius: isDark ? 16 : 10,
+                offset: isDark ? const Offset(0, 6) : const Offset(0, 3),
               ),
             ],
           ),
@@ -432,10 +488,10 @@ class WideStatCard extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B),
+                        color: effectiveIsDark ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF64748B),
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -444,10 +500,10 @@ class WideStatCard extends StatelessWidget {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         value,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF0F172A),
+                          color: effectiveIsDark ? Colors.white : const Color(0xFF0F172A),
                           letterSpacing: -0.4,
                         ),
                       ),
@@ -456,10 +512,10 @@ class WideStatCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         sub!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF94A3B8),
+                          color: effectiveIsDark ? Colors.white.withValues(alpha: 0.75) : const Color(0xFF94A3B8),
                         ),
                       ),
                     ],
@@ -556,10 +612,12 @@ class SectionTitle extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF0F172A),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFFF8FAFC)
+                    : const Color(0xFF0F172A),
                 letterSpacing: -0.3,
               ),
             ),
@@ -577,7 +635,9 @@ class DateField extends StatelessWidget {
   const DateField({super.key, required this.label, required this.value, required this.onChanged, this.clearable = false});
 
   @override
-  Widget build(BuildContext context) => InkWell(
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return InkWell(
         onTap: () async {
           final d = await showDatePicker(
             context: context,
@@ -592,15 +652,25 @@ class DateField extends StatelessWidget {
           decoration: InputDecoration(
             labelText: label,
             suffixIcon: clearable && value != null
-                ? IconButton(icon: const Icon(Icons.clear, size: 18), onPressed: () => onChanged(null))
-                : const Icon(Icons.calendar_today, size: 18),
+                ? IconButton(
+                    icon: Icon(Icons.clear, size: 18, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                    onPressed: () => onChanged(null),
+                  )
+                : Icon(Icons.calendar_today, size: 18, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
           ),
           child: Text(
             value == null ? 'Any' : dmy(value),
-            style: TextStyle(color: value == null ? AppColors.textMuted : AppColors.textPrimary),
+            style: TextStyle(
+              color: value == null
+                  ? (isDark ? const Color(0xFF94A3B8) : AppColors.textMuted)
+                  : (isDark ? const Color(0xFFF8FAFC) : AppColors.textPrimary),
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
           ),
         ),
       );
+  }
 }
 
 /// Previous / next day navigator with frosted glass pill style.
@@ -610,7 +680,11 @@ class DayNav extends StatelessWidget {
   const DayNav({super.key, required this.day, required this.onChanged});
 
   @override
-  Widget build(BuildContext context) => GlassContainer(
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFF8FAFC) : AppColors.textPrimary;
+
+    return GlassContainer(
         blur: 16,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         borderRadius: BorderRadius.circular(24),
@@ -619,15 +693,15 @@ class DayNav extends StatelessWidget {
           children: [
             IconButton(
               onPressed: () => onChanged(day.subtract(const Duration(days: 1))),
-              icon: const Icon(Icons.chevron_left, color: AppColors.textPrimary),
+              icon: Icon(Icons.chevron_left, color: textColor),
               tooltip: 'Previous day',
             ),
             TextButton.icon(
               icon: const Icon(Icons.calendar_today, size: 16, color: AppColors.total),
               label: Text(
                 dmy(day),
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: textColor,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
@@ -644,7 +718,7 @@ class DayNav extends StatelessWidget {
             ),
             IconButton(
               onPressed: () => onChanged(day.add(const Duration(days: 1))),
-              icon: const Icon(Icons.chevron_right, color: AppColors.textPrimary),
+              icon: Icon(Icons.chevron_right, color: textColor),
               tooltip: 'Next day',
             ),
             if (day != today()) ...[
@@ -660,6 +734,7 @@ class DayNav extends StatelessWidget {
           ],
         ),
       );
+  }
 }
 
 class MoneyText extends StatelessWidget {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import '../widgets/sync_status_widget.dart';
+import '../widgets/theme_mode_switcher.dart';
 import 'analysis_screen.dart';
 import 'collection_form.dart';
 import 'collection_history.dart';
@@ -26,13 +27,14 @@ class Shell extends StatefulWidget {
 
 class ShellState extends State<Shell> {
   int _index = 0;
+  final Map<int, Widget> _cachedScreens = {};
 
   late final List<_Dest> _dests = [
     _Dest('Dashboard', Icons.speed, () => DashboardScreen(onGo: go)),
     _Dest('Add Collection', Icons.add_circle_outline, () => CollectionForm(onSaved: () => go(0))),
     const _Dest('Collection History', Icons.menu_book_outlined, CollectionHistory.new),
     const _Dest('Collection Analysis', Icons.bar_chart, AnalysisScreen.new),
-    const _Dest('Expenses', Icons.account_balance_wallet_outlined, ExpensesScreen.new),
+    const _Dest('Expenses', Icons.confirmation_number_outlined, ExpensesScreen.new),
     const _Dest('Daily Money', Icons.payments_outlined, DailyMoneyScreen.new),
     const _Dest('Reports', Icons.description_outlined, ReportsScreen.new),
     const _Dest('Admin - Customers', Icons.storefront_outlined, ShopsScreen.new),
@@ -40,19 +42,39 @@ class ShellState extends State<Shell> {
 
   void go(int i) {
     if (_index == i) return;
+    if (i == 1) {
+      // Re-create Add Collection screen so form fields start fresh
+      _cachedScreens.remove(1);
+    }
     setState(() => _index = i);
   }
 
+  Widget _buildTab(int i) {
+    if (i == 1) {
+      // Add Collection: fresh form when active, or empty placeholder when inactive
+      if (_index == 1) {
+        return _dests[1].build();
+      }
+      return const SizedBox.shrink();
+    }
+    // Lazy cache: instantiate only visited tabs once, then keep them alive for 0ms lag-free switching
+    if (i == _index || _cachedScreens.containsKey(i)) {
+      return _cachedScreens.putIfAbsent(i, () => _dests[i].build());
+    }
+    return const SizedBox.shrink();
+  }
+
   void _openMoreSheet(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          boxShadow: [
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: const [
             BoxShadow(
               color: Color(0x1F0F172A),
               blurRadius: 24,
@@ -69,24 +91,24 @@ class ShellState extends State<Shell> {
               height: 4,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                color: AppColors.borderStrong,
+                color: isDark ? const Color(0xFF475569) : AppColors.borderStrong,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             Row(
               children: [
-                const Text(
+                Text(
                   'More Options',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: isDark ? Colors.white : AppColors.textPrimary,
                     letterSpacing: -0.3,
                   ),
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.close, size: 20, color: AppColors.textSecondary),
+                  icon: Icon(Icons.close, size: 20, color: isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary),
                   onPressed: () => Navigator.pop(ctx),
                 ),
               ],
@@ -95,7 +117,7 @@ class ShellState extends State<Shell> {
             _MoreSheetTile(
               title: 'Expenses',
               subtitle: 'Daily store expenses & category breakdown',
-              icon: Icons.account_balance_wallet_outlined,
+              icon: Icons.confirmation_number_outlined,
               color: AppColors.expenses,
               isSelected: _index == 4,
               onTap: () {
@@ -116,7 +138,7 @@ class ShellState extends State<Shell> {
             ),
             _MoreSheetTile(
               title: 'Reports',
-              subtitle: 'Period summaries and CSV spreadsheets',
+              subtitle: 'Period summaries and Excel spreadsheets',
               icon: Icons.description_outlined,
               color: AppColors.total,
               isSelected: _index == 6,
@@ -145,6 +167,7 @@ class ShellState extends State<Shell> {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.of(context).size.width >= 900;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final dest = _dests[_index];
 
     final nav = _SideNav(
@@ -157,20 +180,20 @@ class ShellState extends State<Shell> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: isDark ? const Color(0xFF0B132B) : AppColors.bgDark,
       extendBodyBehindAppBar: false,
       appBar: wide
           ? null
           : AppBar(
               leading: _index != 0
                   ? IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+                      icon: Icon(Icons.arrow_back_ios_new_rounded, size: 19, color: isDark ? Colors.white : AppColors.textPrimary),
                       tooltip: 'Back to Dashboard',
                       onPressed: () => go(0),
                     )
                   : Builder(
                       builder: (c) => IconButton(
-                        icon: const Icon(Icons.menu_rounded, size: 24, color: AppColors.textPrimary),
+                        icon: Icon(Icons.menu_rounded, size: 24, color: isDark ? Colors.white : AppColors.textPrimary),
                         tooltip: 'Open menu',
                         onPressed: () => Scaffold.of(c).openDrawer(),
                       ),
@@ -179,37 +202,54 @@ class ShellState extends State<Shell> {
               title: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 180),
                 child: _index == 0
-                    ? Image.asset('assets/home_logo.png', height: 32, fit: BoxFit.contain, key: const ValueKey('home_logo'))
+                    ? (isDark
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x22000000),
+                                  blurRadius: 6,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Image.asset('assets/home_logo.png', height: 26, fit: BoxFit.contain, key: const ValueKey('home_logo_dark')),
+                          )
+                        : Image.asset('assets/home_logo.png', height: 32, fit: BoxFit.contain, key: const ValueKey('home_logo')))
                     : Text(
                         dest.label,
                         key: ValueKey(dest.label),
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary),
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: isDark ? Colors.white : AppColors.textPrimary),
                       ),
               ),
               actions: const [
+                ThemeModeSwitcher(compact: true),
                 SyncStatusHeaderButton(compact: true),
               ],
-              backgroundColor: Colors.white,
+              backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
               elevation: 0,
-              shape: const Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+              shape: Border(bottom: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))),
             ),
       drawer: wide
           ? null
           : Drawer(
-              backgroundColor: Colors.white,
+              backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
               child: SafeArea(child: nav),
             ),
       bottomNavigationBar: wide
           ? null
           : Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Color(0xFFE2E8F0), width: 1.2)),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                border: Border(top: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0), width: 1.2)),
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0x0D0F172A),
+                    color: isDark ? const Color(0x33000000) : const Color(0x0D0F172A),
                     blurRadius: 16,
-                    offset: Offset(0, -4),
+                    offset: const Offset(0, -4),
                   ),
                 ],
               ),
@@ -257,8 +297,8 @@ class ShellState extends State<Shell> {
             SizedBox(
               width: 270,
               child: Container(
-                decoration: const BoxDecoration(
-                  border: Border(right: BorderSide(color: AppColors.border, width: 1.2)),
+                decoration: BoxDecoration(
+                  border: Border(right: BorderSide(color: isDark ? const Color(0xFF334155) : AppColors.border, width: 1.2)),
                 ),
                 child: nav,
               ),
@@ -271,9 +311,9 @@ class ShellState extends State<Shell> {
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                        border: Border(bottom: BorderSide(color: isDark ? const Color(0xFF334155) : AppColors.border, width: 1)),
                       ),
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 180),
@@ -296,47 +336,31 @@ class ShellState extends State<Shell> {
                             const SizedBox(width: 14),
                             Text(
                               dest.label,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
+                                color: isDark ? Colors.white : AppColors.textPrimary,
                                 letterSpacing: -0.3,
                               ),
                             ),
                             const Spacer(),
+                            const ThemeModeSwitcher(compact: true),
+                            const SizedBox(width: 8),
                             const SyncStatusHeaderButton(),
                           ],
                         ),
                       ),
                     ),
                   ),
-                // Smooth AnimatedSwitcher with RepaintBoundary for seamless 60/120fps transition
+                // High-performance IndexedStack: 0ms instant tab switching with preserved state
                 Expanded(
                   child: RepaintBoundary(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
-                      reverseDuration: const Duration(milliseconds: 120),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-                        return Stack(
-                          alignment: Alignment.topLeft,
-                          children: <Widget>[
-                            ...previousChildren,
-                            if (currentChild != null) currentChild,
-                          ],
-                        );
-                      },
-                      transitionBuilder: (child, animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: child,
-                        );
-                      },
-                      child: KeyedSubtree(
-                        key: ValueKey(_index),
-                        child: dest.build(),
-                      ),
+                    child: IndexedStack(
+                      index: _index,
+                      children: [
+                        for (int i = 0; i < _dests.length; i++)
+                          _buildTab(i),
+                      ],
                     ),
                   ),
                 ),
@@ -368,10 +392,13 @@ class _MoreSheetTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: isSelected ? color.withValues(alpha: 0.10) : Colors.grey.withValues(alpha: 0.05),
+        color: isSelected
+            ? color.withValues(alpha: isDark ? 0.20 : 0.10)
+            : (isDark ? const Color(0xFF334155).withValues(alpha: 0.35) : Colors.grey.withValues(alpha: 0.05)),
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onTap,
@@ -381,7 +408,7 @@ class _MoreSheetTile extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isSelected ? color.withValues(alpha: 0.4) : AppColors.border,
+                color: isSelected ? color.withValues(alpha: 0.6) : (isDark ? const Color(0xFF334155) : AppColors.border),
                 width: 1.2,
               ),
             ),
@@ -405,15 +432,15 @@ class _MoreSheetTile extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
-                          color: isSelected ? color : AppColors.textPrimary,
+                          color: isSelected ? color : (isDark ? Colors.white : AppColors.textPrimary),
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -452,8 +479,9 @@ class _MobileNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const activeColor = Color(0xFF0284C7);
-    const inactiveColor = Color(0xFF64748B);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
+    final inactiveColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return Expanded(
       child: InkWell(
@@ -469,7 +497,7 @@ class _MobileNavItem extends StatelessWidget {
               curve: Curves.easeOutCubic,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFE0F2FE) : Colors.transparent,
+                color: isSelected ? (isDark ? const Color(0x330284C7) : const Color(0xFFE0F2FE)) : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
@@ -553,7 +581,7 @@ class _CenterAddButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
-                color: isSelected ? const Color(0xFF0284C7) : const Color(0xFF475569),
+                color: isSelected ? const Color(0xFF0284C7) : const Color(0xFF94A3B8),
                 letterSpacing: -0.1,
               ),
             ),
@@ -575,21 +603,36 @@ class _SideNav extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => RepaintBoundary(
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return RepaintBoundary(
         child: Container(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
-                child: Image.asset(
-                  'assets/home_logo.png',
-                  height: 44,
-                  fit: BoxFit.contain,
-                ),
+                child: isDark
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Image.asset(
+                          'assets/home_logo.png',
+                          height: 36,
+                          fit: BoxFit.contain,
+                        ),
+                      )
+                    : Image.asset(
+                        'assets/home_logo.png',
+                        height: 44,
+                        fit: BoxFit.contain,
+                      ),
               ),
-              const Divider(height: 1, color: AppColors.border),
+              Divider(height: 1, color: isDark ? const Color(0xFF334155) : AppColors.border),
               const SizedBox(height: 6),
 
               // Navigation Items
@@ -612,6 +655,7 @@ class _SideNav extends StatelessWidget {
           ),
         ),
       );
+  }
 }
 
 class _NavItem extends StatefulWidget {
@@ -637,8 +681,9 @@ class _NavItemState extends State<_NavItem> {
 
   @override
   Widget build(BuildContext context) {
-    const activeColor = AppColors.total;
-    const inactiveColor = AppColors.textSecondary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? const Color(0xFF38BDF8) : AppColors.total;
+    final inactiveColor = isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
     final currentColor = widget.isSelected ? activeColor : inactiveColor;
 
     final bgColor = widget.isSelected
@@ -717,7 +762,7 @@ class _NavItemState extends State<_NavItem> {
                         child: Container(
                           width: 6,
                           height: 6,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: activeColor,
                           ),

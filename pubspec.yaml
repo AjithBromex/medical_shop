@@ -24,6 +24,7 @@ dependencies:
   shared_preferences: ^2.2.3
   sqflite_common_ffi_web: ^0.4.3+1
   http: ^1.2.1
+  open_filex: ^5.0.0
 
 dev_dependencies:
   flutter_test:
@@ -35,5 +36,12 @@ flutter:
   assets:
     - assets/logo.png
     - assets/home_logo.png
+    - assets/splash_icon.png
+    - assets/DancingScript.ttf
+
+  fonts:
+    - family: DancingScript
+      fonts:
+        - asset: assets/DancingScript.ttf
 
 

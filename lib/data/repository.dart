@@ -80,11 +80,12 @@ class Repository {
 
   Future<List<ShopRow>> shopRows(String? q) async {
     final d = await _db;
-    final where = q == null || q.isEmpty ? '' : "WHERE s.shop_name LIKE ? ESCAPE '\\'";
+    final where = q == null || q.isEmpty ? '' : "WHERE (s.shop_name LIKE ? ESCAPE '\\' OR s.phone LIKE ? ESCAPE '\\' OR s.address LIKE ? ESCAPE '\\')";
+    final escQ = q == null || q.isEmpty ? '' : '%${_esc(q)}%';
     final rows = await d.rawQuery('''
 SELECT s.*, COUNT(c.id) AS cnt, COALESCE(SUM(c.total_amount),0) AS tot
 FROM medical_shops s LEFT JOIN collections c ON c.medical_shop_id = s.id
-$where GROUP BY s.id ORDER BY s.shop_name COLLATE NOCASE''', where.isEmpty ? null : ['%${_esc(q!)}%']);
+$where GROUP BY s.id ORDER BY s.shop_name COLLATE NOCASE''', where.isEmpty ? null : [escQ, escQ, escQ]);
     return rows.map((r) => ShopRow(MedicalShop.fromMap(r), r['cnt'] as int, r['tot'] as int)).toList();
   }
 
@@ -148,7 +149,7 @@ $where GROUP BY s.id ORDER BY s.shop_name COLLATE NOCASE''', where.isEmpty ? nul
     }
 
     String prefix = '#';
-    int padLength = 6;
+    int padLength = 5;
     int currentNum = 0;
 
     if (reference != null && reference.isNotEmpty) {
@@ -156,8 +157,13 @@ $where GROUP BY s.id ORDER BY s.shop_name COLLATE NOCASE''', where.isEmpty ? nul
       if (match != null) {
         prefix = match.group(1) ?? '#';
         final digitsStr = match.group(2)!;
-        padLength = digitsStr.length;
         currentNum = int.tryParse(digitsStr) ?? 0;
+        // User requires 5 digits (#00001 to #99999)
+        if (prefix == '#' || prefix.isEmpty) {
+          padLength = digitsStr.length > 5 && !digitsStr.startsWith('0') ? digitsStr.length : 5;
+        } else {
+          padLength = digitsStr.length;
+        }
       }
     }
 

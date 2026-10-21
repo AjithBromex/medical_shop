@@ -8,10 +8,12 @@ void main() {
   group('Receipt Number Sequencing Parsing Logic', () {
     String computeNext(String reference) {
       final match = RegExp(r'^(.*?)(\d+)$').firstMatch(reference.trim());
-      if (match == null) return '#000001';
+      if (match == null) return '#00001';
       final prefix = match.group(1) ?? '#';
       final digitsStr = match.group(2)!;
-      final padLength = digitsStr.length;
+      final padLength = (prefix == '#' || prefix.isEmpty)
+          ? (digitsStr.length > 5 && !digitsStr.startsWith('0') ? digitsStr.length : 5)
+          : digitsStr.length;
       final currentNum = int.tryParse(digitsStr) ?? 0;
       final nextNum = currentNum + 1;
       return '$prefix${nextNum.toString().padLeft(padLength, '0')}';
@@ -27,8 +29,12 @@ void main() {
       expect(computeNext('#02001'), '#02002');
     });
 
-    test('#000004 continues to #000005', () {
-      expect(computeNext('#000004'), '#000005');
+    test('#00001 continues to #00002 in 5 digits format (#00001 to #99999)', () {
+      expect(computeNext('#00001'), '#00002');
+    });
+
+    test('#000004 legacy continues to 5-digit format', () {
+      expect(computeNext('#000004'), '#00005');
     });
 
     test('custom prefixes continue correctly', () {
@@ -56,7 +62,7 @@ void main() {
 
     test('buildReportPdfDocument builds date_range PDF document matching reference format', () async {
       TestWidgetsFlutterBinding.ensureInitialized();
-      final report = Report(
+      const report = Report(
         'date_range',
         'Date-range Collection Report',
         ['#', 'Receipt No.', 'Date', 'Customer', 'Cash', 'Gpay/cheque/CN', 'Total', 'Notes'],
