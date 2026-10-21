@@ -340,6 +340,7 @@ class _CollectionFormState extends State<CollectionForm> {
                 return TextField(
                   controller: controller,
                   focusNode: focusNode,
+                  textCapitalization: TextCapitalization.words,
                   decoration: InputDecoration(
                     labelText: 'Search & choose medical shop',
                     hintText: 'Type shop name...',

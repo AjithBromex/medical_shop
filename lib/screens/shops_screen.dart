@@ -121,6 +121,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
           body: PageBody([
             TextField(
               controller: _searchCtrl,
+              textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
                 labelText: 'Search shops',
                 hintText: 'Type shop name...',
@@ -404,6 +405,7 @@ class _ShopFormState extends State<_ShopForm> {
           TextField(
             controller: _name,
             autofocus: true,
+            textCapitalization: TextCapitalization.words,
             style: TextStyle(
               fontSize: 15.5,
               fontWeight: FontWeight.w500,

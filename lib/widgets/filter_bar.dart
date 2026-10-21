@@ -51,6 +51,7 @@ class _FilterBarState extends State<FilterBar> {
   Widget _buildSearchField(Filters f) {
     return TextField(
       controller: _q,
+      textCapitalization: TextCapitalization.words,
       decoration: InputDecoration(
         labelText: widget.searchHint,
         prefixIcon: const Icon(Icons.search, size: 20),
