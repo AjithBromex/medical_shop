@@ -490,6 +490,7 @@ class _ExpenseFormState extends State<_ExpenseForm> {
           const SizedBox(height: 14),
           DropdownButtonFormField<String>(
             initialValue: cats.contains(_category) ? _category : null,
+            isExpanded: true,
             dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
             icon: Icon(Icons.keyboard_arrow_down_rounded, color: isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary, size: 24),
             style: TextStyle(
@@ -524,7 +525,7 @@ class _ExpenseFormState extends State<_ExpenseForm> {
               for (final c in cats)
                 DropdownMenuItem(
                   value: c,
-                  child: Text(c),
+                  child: Text(c, overflow: TextOverflow.ellipsis),
                 ),
             ],
             onChanged: (v) => setState(() => _category = v),

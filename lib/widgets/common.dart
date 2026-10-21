@@ -240,13 +240,17 @@ class HeroStatCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      amount,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 27,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.6,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        amount,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 27,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.6,
+                        ),
                       ),
                     ),
                     if (subtext != null) ...[
@@ -660,6 +664,8 @@ class DateField extends StatelessWidget {
           ),
           child: Text(
             value == null ? 'Any' : dmy(value),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: value == null
                   ? (isDark ? const Color(0xFF94A3B8) : AppColors.textMuted)

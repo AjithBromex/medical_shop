@@ -44,9 +44,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
               padding: const EdgeInsets.all(14),
               child: DropdownButtonFormField<String>(
                 initialValue: _kind,
+                isExpanded: true,
                 dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                 decoration: const InputDecoration(labelText: 'Choose a report', prefixIcon: Icon(Icons.assessment_outlined)),
-                items: [for (final e in reportTitles.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
+                items: [for (final e in reportTitles.entries) DropdownMenuItem(value: e.key, child: Text(e.value, overflow: TextOverflow.ellipsis))],
                 onChanged: (v) => setState(() => _kind = v),
               ),
             ),
