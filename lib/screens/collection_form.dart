@@ -22,7 +22,7 @@ class CollectionForm extends StatefulWidget {
 
 class _CollectionFormState extends State<CollectionForm> {
   final _receipt = TextEditingController();
-  final _cash = TextEditingController();
+  final _collected = TextEditingController();
   final _gpayCheque = TextEditingController();
   final _notes = TextEditingController();
   final _shopSearch = TextEditingController();
@@ -39,7 +39,7 @@ class _CollectionFormState extends State<CollectionForm> {
   void initState() {
     super.initState();
     _init();
-    for (final c in [_cash, _gpayCheque, _shopSearch]) {
+    for (final c in [_collected, _gpayCheque, _shopSearch]) {
       c.addListener(() => setState(() {}));
     }
     _shopSearch.addListener(() {
@@ -57,7 +57,7 @@ class _CollectionFormState extends State<CollectionForm> {
       _receipt.text = e.receiptNumber;
       _date = e.date;
       _shopId = e.shopId;
-      _cash.text = e.cash > 0 ? plain(e.cash) : '';
+      _collected.text = e.total > 0 ? plain(e.total) : '';
       final online = e.gpay + e.cheque;
       _gpayCheque.text = online > 0 ? plain(online) : '';
       _notes.text = e.notes ?? '';
@@ -74,7 +74,7 @@ class _CollectionFormState extends State<CollectionForm> {
   @override
   void dispose() {
     _shopFocus.dispose();
-    for (final c in [_receipt, _cash, _gpayCheque, _notes, _shopSearch]) {
+    for (final c in [_receipt, _collected, _gpayCheque, _notes, _shopSearch]) {
       c.dispose();
     }
     super.dispose();
@@ -135,24 +135,35 @@ class _CollectionFormState extends State<CollectionForm> {
       errors.add('That shop is inactive. Activate it in Admin - Customers first.');
     }
 
-    var cash = 0, gpayCheque = 0;
-    var amountError = false;
-    for (final (ctrl, label) in [(_cash, 'Cash amount'), (_gpayCheque, 'Gpay/cheque/CN amount')]) {
-      try {
-        final v = parseAmount(ctrl.text, label);
-        if (label.startsWith('Cash')) {
-          cash = v;
-        } else {
-          gpayCheque = v;
-        }
-      } on FormatException catch (e) {
-        errors.add(e.message);
-        amountError = true;
+    int collected = 0, gpayCheque = 0;
+    bool amountError = false;
+
+    try {
+      collected = parseAmount(_collected.text, 'Collected amount', allowZero: false);
+    } on FormatException catch (e) {
+      errors.add(e.message);
+      amountError = true;
+    }
+
+    try {
+      gpayCheque = parseAmount(_gpayCheque.text, 'GPay / Cheque amount', allowZero: true);
+    } on FormatException catch (e) {
+      errors.add(e.message);
+      amountError = true;
+    }
+
+    if (!amountError) {
+      if (collected <= 0) {
+        errors.add('Collected amount must be greater than zero.');
+      }
+      if (gpayCheque < 0) {
+        errors.add('GPay / Cheque amount cannot be negative.');
+      }
+      if (gpayCheque > collected) {
+        errors.add('GPay / Cheque amount (${inr(gpayCheque)}) cannot exceed Collected amount (${inr(collected)}).');
       }
     }
-    if (!amountError && cash + gpayCheque == 0) {
-      errors.add('Enter at least one payment amount (cash or Gpay/cheque/CN) greater than zero.');
-    }
+
     final notes = _notes.text.trim();
     if (notes.length > 500) errors.add('Notes can be at most 500 characters.');
 
@@ -160,6 +171,9 @@ class _CollectionFormState extends State<CollectionForm> {
       setState(() => _errors = errors);
       return;
     }
+
+    // Automatically calculate cash amount: Cash Amount = Collected Amount − GPay / Cheque Amount
+    final cash = collected - gpayCheque;
 
     setState(() { _saving = true; _errors = []; });
     try {
@@ -184,7 +198,7 @@ class _CollectionFormState extends State<CollectionForm> {
         toast(context, 'Collection $receipt saved (${inr(c.total)}).');
         // ready for the next entry, same date kept
         _receipt.text = await repo.nextReceiptNumber();
-        _cash.clear(); _gpayCheque.clear(); _notes.clear();
+        _collected.clear(); _gpayCheque.clear(); _notes.clear();
         _shopSearch.clear();
         setState(() => _shopId = null);
         if (mounted) {
@@ -231,7 +245,9 @@ class _CollectionFormState extends State<CollectionForm> {
         body: const Center(child: CircularProgressIndicator(color: AppColors.total)),
       );
     }
-    final total = _safe(_cash) + _safe(_gpayCheque);
+    final collected = _safe(_collected);
+    final gpayCheque = _safe(_gpayCheque);
+    final cash = gpayCheque > collected ? 0 : collected - gpayCheque;
 
     final body = PageBody([
       if (_shops.isEmpty)
@@ -260,9 +276,9 @@ class _CollectionFormState extends State<CollectionForm> {
 
       // 1. Hero Total Card
       HeroStatCard(
-        amount: inr(total),
+        amount: inr(collected),
         title: 'Total collection',
-        subtext: 'Cash: ${inr(_safe(_cash))}  •  Gpay/cheque/CN: ${inr(_safe(_gpayCheque))}',
+        subtext: 'Cash (auto): ${inr(cash)}  •  GPay / Cheque: ${inr(gpayCheque)}',
         icon: Icons.monetization_on_outlined,
         gradientColors: const [Color(0xFF0284C7), Color(0xFF0EA5E9)],
         badgeText: 'LIVE\nTOTAL',
@@ -439,6 +455,7 @@ class _CollectionFormState extends State<CollectionForm> {
       GlassCard(
         padding: const EdgeInsets.all(18),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             LayoutBuilder(
               builder: (context, constraints) {
@@ -451,20 +468,21 @@ class _CollectionFormState extends State<CollectionForm> {
                     SizedBox(
                       width: itemWidth,
                       child: TextField(
-                        controller: _cash,
+                        controller: _collected,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: InputDecoration(
-                          labelText: 'Cash amount',
+                          labelText: 'Collected amount',
+                          hintText: 'Enter total collected',
                           prefixText: '₹ ',
                           prefixIcon: Container(
                             width: 36,
                             height: 36,
                             margin: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE8F5E9),
+                              color: const Color(0xFFE0F2FE),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(Icons.payments_outlined, color: Color(0xFF10B981), size: 20),
+                            child: const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFF0284C7), size: 20),
                           ),
                         ),
                       ),
@@ -475,7 +493,8 @@ class _CollectionFormState extends State<CollectionForm> {
                         controller: _gpayCheque,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: InputDecoration(
-                          labelText: 'Gpay/cheque/CN amount',
+                          labelText: 'GPay / Cheque amount',
+                          hintText: 'Enter GPay or cheque amount',
                           prefixText: '₹ ',
                           prefixIcon: Container(
                             width: 36,
@@ -494,6 +513,8 @@ class _CollectionFormState extends State<CollectionForm> {
                 );
               },
             ),
+            const SizedBox(height: 14),
+
             const SizedBox(height: 14),
             TextField(
               controller: _notes,
@@ -554,4 +575,5 @@ class _CollectionFormState extends State<CollectionForm> {
           )
         : body;
   }
+
 }

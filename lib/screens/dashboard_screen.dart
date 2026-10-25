@@ -65,7 +65,7 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // 2. Row of 2: Cash collection & Gpay/cheque/CN
+            // 2. Row of 2: Cash collection & Gpay/NEFT/Others
             Row(
               children: [
                 Expanded(
@@ -80,7 +80,7 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _MiniStatCard(
-                    label: 'Gpay/cheque/CN',
+                    label: 'Gpay/NEFT/Others',
                     value: inr(d.t.gpay + d.t.cheque),
                     icon: Icons.account_balance_outlined,
                     iconColor: const Color(0xFF3B82F6),
@@ -109,6 +109,7 @@ class DashboardScreen extends StatelessWidget {
                     icon: Icons.confirmation_number_outlined,
                     iconColor: const Color(0xFFF43F5E),
                     iconBg: const Color(0xFFFFE4E6),
+                    onTap: () => onGo(3),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -147,6 +148,7 @@ class DashboardScreen extends StatelessWidget {
                     icon: Icons.confirmation_number_outlined,
                     iconColor: const Color(0xFFF43F5E),
                     iconBg: const Color(0xFFFFE4E6),
+                    onTap: () => onGo(3),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -175,7 +177,7 @@ class DashboardScreen extends StatelessWidget {
                       labels: [for (final x in days) shortDay(x)],
                       bars: [
                         Series('Cash', AppColors.cash, [for (final r in series) r.cash]),
-                        Series('Gpay/cheque/CN', AppColors.gpay, [for (final r in series) r.gpay + r.cheque]),
+                        Series('Gpay/NEFT/Others', AppColors.gpay, [for (final r in series) r.gpay + r.cheque]),
                       ],
                       line: Series('Expenses', AppColors.expenses, [for (final r in series) r.expenses]),
                     ),
@@ -353,6 +355,7 @@ class _MiniStatCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final Color iconBg;
+  final VoidCallback? onTap;
 
   const _MiniStatCard({
     required this.label,
@@ -361,70 +364,79 @@ class _MiniStatCard extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.iconBg,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? const Color(0x33000000) : const Color(0x0A0F172A),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: isDark ? iconBg.withValues(alpha: 0.18) : iconBg,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: iconColor, size: 22),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
-              letterSpacing: -0.4,
-            ),
-          ),
-          if (sub != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              sub!,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: isDark ? const Color(0x33000000) : const Color(0x0A0F172A),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
-            ),
-          ],
-        ],
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isDark ? iconBg.withValues(alpha: 0.18) : iconBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 22),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                  letterSpacing: -0.4,
+                ),
+              ),
+              if (sub != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  sub!,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

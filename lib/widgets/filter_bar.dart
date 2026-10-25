@@ -116,7 +116,7 @@ class _FilterBarState extends State<FilterBar> {
         ),
         DropdownMenuItem(
           value: 'gpay_cheque',
-          child: Text('Gpay/cheque/CN', overflow: TextOverflow.ellipsis),
+          child: Text('Gpay/NEFT/Others', overflow: TextOverflow.ellipsis),
         ),
       ],
       onChanged: (v) => _set(f.copyWith(method: v)),

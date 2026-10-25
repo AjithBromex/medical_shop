@@ -338,7 +338,7 @@ class ReceiptScreen extends StatelessWidget {
                                         child: pw.Center(child: pw.SvgImage(svg: _cardSvg, width: 14, height: 14)),
                                       ),
                                       pw.SizedBox(width: 10),
-                                      pw.Text('Gpay/cheque/CN', style: pw.TextStyle(font: bold, fontSize: 11, color: PdfColor.fromHex('1E293B'))),
+                                      pw.Text('Gpay/NEFT/Others', style: pw.TextStyle(font: bold, fontSize: 11, color: PdfColor.fromHex('1E293B'))),
                                     ],
                                   ),
                                   pw.Text(inr(c.gpay + c.cheque), style: pw.TextStyle(font: bold, fontSize: 11.5, color: PdfColor.fromHex('0F172A'))),
@@ -499,7 +499,7 @@ class ReceiptScreen extends StatelessWidget {
         [],
         ['Payment Method', 'Amount (₹)'],
         ['Cash', c.cash.toStringAsFixed(2)],
-        ['Gpay/cheque/CN', (c.gpay + c.cheque).toStringAsFixed(2)],
+        ['Gpay/NEFT/Others', (c.gpay + c.cheque).toStringAsFixed(2)],
         ['Total Amount', c.total.toStringAsFixed(2)],
         if (c.notes != null && c.notes!.isNotEmpty) ...[
           [],
@@ -875,7 +875,7 @@ class ReceiptScreen extends StatelessWidget {
                                               ),
                                               const SizedBox(width: 10),
                                               const Text(
-                                                'Gpay/cheque/CN',
+                                                'Gpay/NEFT/Others',
                                                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
                                               ),
                                               const Spacer(),

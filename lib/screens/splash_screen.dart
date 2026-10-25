@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../core/theme.dart';
+import '../state/app_state.dart';
+import 'login_screen.dart';
 import 'shell.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -29,20 +32,36 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     );
 
     _controller.forward();
+    _checkAuthAndNavigate();
+  }
 
-    // Smooth transition to main app shell after 850ms
-    Timer(const Duration(milliseconds: 850), () {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 350),
-          pageBuilder: (context, animation, secondaryAnimation) => const Shell(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-        ),
-      );
-    });
+  Future<void> _checkAuthAndNavigate() async {
+    final stopwatch = Stopwatch()..start();
+    final state = context.read<AppState>();
+
+    // Wait until initial settings and silent sign-in check finish
+    while (!state.ready && mounted) {
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+
+    // Minimum splash branding time (850ms) for visual smoothness
+    final elapsed = stopwatch.elapsedMilliseconds;
+    if (elapsed < 850) {
+      await Future.delayed(Duration(milliseconds: 850 - elapsed));
+    }
+
+    if (!mounted) return;
+
+    final target = state.isSignedIn ? const Shell() : const LoginScreen();
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 350),
+        pageBuilder: (context, animation, secondaryAnimation) => target,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
   }
 
   @override

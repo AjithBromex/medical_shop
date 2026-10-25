@@ -1,7 +1,12 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../core/theme.dart';
-import '../data/api_service.dart';
+import '../screens/login_screen.dart';
 import '../state/app_state.dart';
 import 'common.dart';
 
@@ -17,7 +22,11 @@ class SyncStatusHeaderButton extends StatelessWidget {
     String label;
     Color color;
 
-    if (state.isSyncing) {
+    if (!state.isSignedIn) {
+      icon = const Icon(Icons.account_circle_outlined, size: 19, color: AppColors.textSecondary);
+      label = 'Sign In';
+      color = AppColors.textSecondary;
+    } else if (state.isSyncing) {
       icon = const SizedBox(
         width: 16,
         height: 16,
@@ -39,7 +48,7 @@ class SyncStatusHeaderButton extends StatelessWidget {
       color = AppColors.textSecondary;
     } else {
       icon = const Icon(Icons.cloud_done_rounded, size: 19, color: AppColors.gpay);
-      label = 'Backed up';
+      label = 'Drive Backed Up';
       color = AppColors.gpay;
     }
 
@@ -118,9 +127,11 @@ void showCloudSyncSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
+    isScrollControlled: true,
     builder: (ctx) {
       final state = ctx.watch<AppState>();
-      final isUpToDate = state.isOnline && state.pendingSyncCount == 0;
+      final isUpToDate = state.isSignedIn && state.isOnline && state.pendingSyncCount == 0;
+      final user = state.currentUser;
 
       return Container(
         decoration: BoxDecoration(
@@ -155,7 +166,7 @@ void showCloudSyncSheet(BuildContext context) {
                 const Icon(Icons.cloud_sync_rounded, color: AppColors.total, size: 24),
                 const SizedBox(width: 10),
                 Text(
-                  'Cloud Backup & Sync',
+                  'Google Drive Sync',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -170,6 +181,143 @@ void showCloudSyncSheet(BuildContext context) {
               ],
             ),
             const SizedBox(height: 14),
+
+            // Google Account Status
+            if (user != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: AppColors.total.withValues(alpha: 0.15),
+                      child: Text(
+                        (user.displayName.isNotEmpty ? user.displayName[0] : 'U').toUpperCase(),
+                        style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.total),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.displayName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13.5,
+                              color: isDark ? Colors.white : AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            user.email,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert, size: 20),
+                      onSelected: (val) async {
+                        if (val == 'switch') {
+                          await _showSignInOrSwitchDialog(ctx, isSwitch: true);
+                        } else if (val == 'signout') {
+                          await state.signOut();
+                          if (ctx.mounted) {
+                            Navigator.pop(ctx);
+                            toast(ctx, 'Signed out of Google Drive.');
+                            Navigator.of(ctx, rootNavigator: true).pushAndRemoveUntil(
+                              MaterialPageRoute(builder: (_) => const LoginScreen()),
+                              (route) => false,
+                            );
+                          }
+                        }
+                      },
+                      itemBuilder: (c) => [
+                        const PopupMenuItem(
+                          value: 'switch',
+                          child: Row(
+                            children: [
+                              Icon(Icons.switch_account_outlined, size: 18),
+                              SizedBox(width: 8),
+                              Text('Switch Account'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'signout',
+                          child: Row(
+                            children: [
+                              Icon(Icons.logout, size: 18, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text('Sign Out', style: TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ] else ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isDark ? const Color(0xFF1E3A8A) : const Color(0xFFBFDBFE)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.lock_outline, color: AppColors.total, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Personal Cloud Backup',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Sign in with your Google account. Your records will be stored in your private Google Drive appDataFolder, accessible only by you.',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        icon: const Icon(Icons.login_rounded, size: 18),
+                        label: const Text('Sign In with Google'),
+                        onPressed: () => _showSignInOrSwitchDialog(ctx, isSwitch: false),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // Sync Status Box
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -187,18 +335,22 @@ void showCloudSyncSheet(BuildContext context) {
                         height: 10,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isUpToDate
-                              ? AppColors.gpay
-                              : (state.isOnline ? Colors.amber.shade700 : const Color(0xFF94A3B8)),
+                          color: !state.isSignedIn
+                              ? const Color(0xFF94A3B8)
+                              : (isUpToDate
+                                  ? AppColors.gpay
+                                  : (state.isOnline ? Colors.amber.shade700 : const Color(0xFF94A3B8))),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        isUpToDate
-                            ? 'All Data Backed Up'
-                            : (state.isOnline
-                                ? '${state.pendingSyncCount} changes uploading...'
-                                : 'Working Offline'),
+                        !state.isSignedIn
+                            ? 'Local Mode Only'
+                            : (isUpToDate
+                                ? 'All Records Synced to Drive'
+                                : (state.isOnline
+                                    ? '${state.pendingSyncCount} changes uploading...'
+                                    : 'Working Offline')),
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 14,
@@ -209,39 +361,73 @@ void showCloudSyncSheet(BuildContext context) {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    isUpToDate
-                        ? 'Your collections, expenses, and customer records are safely backed up.'
-                        : (state.isOnline
-                            ? 'Backing up your latest records to the cloud.'
-                            : 'All records are saved securely on your device and will back up automatically once connected to the internet.'),
+                    !state.isSignedIn
+                        ? 'Records are saved locally on this device. Sign in with Google to enable automatic cloud backup.'
+                        : (isUpToDate
+                            ? 'Your collections, expenses, and customer records are safely synced with your Google Drive appDataFolder.'
+                            : (state.isOnline
+                                ? 'Backing up latest records to your Google Drive.'
+                                : 'Records are saved safely on this device and will sync automatically once an internet connection is available.')),
                     style: TextStyle(
                       fontSize: 12.5,
                       color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                       height: 1.35,
                     ),
                   ),
+                  if (state.lastSyncTime != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Last synced: ${DateFormat('dd MMM yyyy, hh:mm a').format(state.lastSyncTime!)}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ],
+                  if (state.syncErrorMessage != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      state.syncErrorMessage!,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.redAccent,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: 18),
-            SizedBox(
-              width: double.infinity,
-              child: GlassButton(
-                onPressed: state.isSyncing
-                    ? null
-                    : () async {
-                        await state.triggerSync();
-                        if (ctx.mounted) {
-                          toast(ctx, state.isOnline ? 'Backup updated successfully.' : 'Working offline. Saved locally.');
-                        }
-                      },
-                icon: Icons.refresh_rounded,
-                accentColor: AppColors.total,
-                isPrimary: true,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: Text(state.isSyncing ? 'Syncing...' : 'Sync Now', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+
+            if (state.isSignedIn)
+              SizedBox(
+                width: double.infinity,
+                child: GlassButton(
+                  onPressed: state.isSyncing
+                      ? null
+                      : () async {
+                          await state.triggerSync();
+                          if (ctx.mounted) {
+                            toast(
+                              ctx,
+                              state.isOnline
+                                  ? 'Google Drive backup updated successfully.'
+                                  : (state.syncErrorMessage ?? 'Working offline. Saved locally.'),
+                            );
+                          }
+                        },
+                  icon: Icons.refresh_rounded,
+                  accentColor: AppColors.total,
+                  isPrimary: true,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Text(
+                    state.isSyncing ? 'Syncing to Drive...' : 'Sync Now',
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       );
@@ -249,18 +435,41 @@ void showCloudSyncSheet(BuildContext context) {
   );
 }
 
-void showConfigureServerDialog(BuildContext context) {
-  final urlCtrl = TextEditingController(text: ApiService.instance.baseUrl);
-  final keyCtrl = TextEditingController(text: ApiService.instance.apiKey);
+Future<void> _showSignInOrSwitchDialog(BuildContext context, {required bool isSwitch}) async {
+  final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 
-  showDialog(
+  if (!isDesktop) {
+    // Mobile & Web can sign in directly
+    final state = context.read<AppState>();
+    try {
+      if (isSwitch) {
+        await state.switchAccount();
+      } else {
+        await state.signIn();
+      }
+      if (context.mounted) {
+        toast(context, 'Signed in with Google successfully.');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        toast(context, 'Sign in failed: $e', error: true);
+      }
+    }
+    return;
+  }
+
+  // Desktop OAuth dialog (asking for Google Cloud Web/Desktop Client ID if not configured)
+  final clientIdCtrl = TextEditingController();
+  final clientSecretCtrl = TextEditingController();
+
+  await showDialog(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Row(
+    builder: (dCtx) => AlertDialog(
+      title: Row(
         children: [
-          Icon(Icons.cloud_queue, color: AppColors.total),
-          SizedBox(width: 10),
-          Text('Cloud Server Settings'),
+          const Icon(Icons.cloud_sync, color: AppColors.total),
+          const SizedBox(width: 10),
+          Text(isSwitch ? 'Switch Google Account' : 'Desktop Google Sign-In'),
         ],
       ),
       content: SingleChildScrollView(
@@ -269,28 +478,27 @@ void showConfigureServerDialog(BuildContext context) {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Enter your deployed online backend URL (e.g. from Render or Railway). Never uses localhost.',
+              'On desktop (Windows/Linux), signing into Google Drive uses browser-based OAuth 2.0 loopback authorization.',
               style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             TextField(
-              controller: urlCtrl,
+              controller: clientIdCtrl,
               decoration: const InputDecoration(
-                labelText: 'Hosted Backend API URL',
-                hintText: 'https://your-service.onrender.com/api',
+                labelText: 'Google OAuth Client ID',
+                hintText: 'xxxx.apps.googleusercontent.com',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.link),
+                prefixIcon: Icon(Icons.vpn_key_outlined),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             TextField(
-              controller: keyCtrl,
+              controller: clientSecretCtrl,
               obscureText: true,
               decoration: const InputDecoration(
-                labelText: 'API Secret Key (Optional)',
-                hintText: 'Set in your hosting environment',
+                labelText: 'Client Secret (Optional)',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.key),
+                prefixIcon: Icon(Icons.lock_outline),
               ),
             ),
           ],
@@ -298,23 +506,31 @@ void showConfigureServerDialog(BuildContext context) {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(ctx),
+          onPressed: () => Navigator.pop(dCtx),
           child: const Text('Cancel'),
         ),
         FilledButton(
           onPressed: () async {
-            final newUrl = urlCtrl.text.trim();
-            final newKey = keyCtrl.text.trim();
-            if (newUrl.isEmpty) return;
-
-            await ApiService.instance.updateConfig(newUrl: newUrl, newApiKey: newKey);
-            if (ctx.mounted) {
-              Navigator.pop(ctx);
-              context.read<AppState>().triggerSync();
-              toast(context, 'Server settings updated. Connecting...');
+            final cId = clientIdCtrl.text.trim();
+            final cSec = clientSecretCtrl.text.trim();
+            Navigator.pop(dCtx);
+            final state = context.read<AppState>();
+            try {
+              if (isSwitch) {
+                await state.switchAccount(desktopClientId: cId, desktopClientSecret: cSec);
+              } else {
+                await state.signIn(desktopClientId: cId, desktopClientSecret: cSec);
+              }
+              if (context.mounted) {
+                toast(context, 'Signed in with Google successfully.');
+              }
+            } catch (e) {
+              if (context.mounted) {
+                toast(context, 'Sign-in error: $e', error: true);
+              }
             }
           },
-          child: const Text('Save & Connect'),
+          child: const Text('Continue to Browser Sign-In'),
         ),
       ],
     ),

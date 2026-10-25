@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/money.dart';
 import '../core/theme.dart';
 import '../data/models.dart';
 import '../data/repository.dart';
@@ -11,7 +12,8 @@ class _R {
   final List<MedicalShop> shops;
   final List<String> categories;
   final Report? report;
-  _R(this.shops, this.categories, this.report);
+  final int expenseTotal;
+  _R(this.shops, this.categories, this.report, {this.expenseTotal = 0});
 }
 
 /// On-screen reports + CSV export. Both use the same filters.
@@ -27,7 +29,27 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Future<_R> _load() async {
     final r = Repository.instance;
-    return _R(await r.shops(), await r.categoryNames(), _kind == null ? null : await r.buildReport(_kind!, _f));
+    Report? report;
+    int expTotal = 0;
+    if (_kind != null) {
+      report = await r.buildReport(_kind!, _f);
+      if (_kind == 'date_range' && report.rows.isNotEmpty) {
+        DateTime? minD = _f.dateFrom;
+        DateTime? maxD = _f.dateTo;
+        for (final row in report.rows) {
+          for (final v in row) {
+            if (v is DateTime) {
+              minD = (minD == null || v.isBefore(minD)) ? v : minD;
+              maxD = (maxD == null || v.isAfter(maxD)) ? v : maxD;
+            }
+          }
+        }
+        try {
+          expTotal = await r.expenseTotal(minD, maxD);
+        } catch (_) {}
+      }
+    }
+    return _R(await r.shops(), await r.categoryNames(), report, expenseTotal: expTotal);
   }
 
   @override
@@ -105,6 +127,59 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ),
                 ],
               ),
+              if (_kind == 'date_range' && d.report!.rows.isNotEmpty) ...[
+                Builder(builder: (context) {
+                  int totalCashPaise = 0;
+                  if (d.report!.footer != null && d.report!.footer!.length > 4) {
+                    final c = d.report!.footer![4];
+                    if (c is Money) {
+                      totalCashPaise = c.paise;
+                    } else {
+                      try {
+                        totalCashPaise = parseAmount(Report.cell(c), 'Cash', allowZero: true);
+                      } catch (_) {}
+                    }
+                  }
+                  return Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: MiniStatCard(
+                              label: 'Total Cash',
+                              value: inr(totalCashPaise),
+                              icon: Icons.payments_outlined,
+                              iconColor: const Color(0xFF0D9488),
+                              iconBg: const Color(0xFFD1FAE5),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: MiniStatCard(
+                              label: 'Expense',
+                              value: inr(d.expenseTotal),
+                              icon: Icons.receipt_long_outlined,
+                              iconColor: const Color(0xFFDC2626),
+                              iconBg: const Color(0xFFFEE2E2),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: MiniStatCard(
+                              label: 'Remaining Cash',
+                              value: inr(totalCashPaise - d.expenseTotal),
+                              icon: Icons.account_balance_wallet_outlined,
+                              iconColor: isDark ? const Color(0xFF60A5FA) : const Color(0xFF0A2540),
+                              iconBg: const Color(0xFFDBEAFE),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                }),
+              ],
               const SizedBox(height: 12),
               GlassCard(
                 padding: const EdgeInsets.all(8),
@@ -143,14 +218,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             for (final r in d.report!.rows)
                               DataRow(
                                 cells: [
-                                  for (final v in r)
+                                  for (var i = 0; i < r.length; i++)
                                     DataCell(
                                       Text(
-                                        Report.cell(v),
+                                        Report.cell(r[i]),
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w700,
-                                          color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                                          color: (_kind == 'date_range' && i == r.length - 1)
+                                              ? ((Report.cell(r[i]) == '-' || Report.cell(r[i]) == ' - ')
+                                                  ? const Color(0xFFEF4444)
+                                                  : const Color(0xFFDC2626))
+                                              : (isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A)),
                                         ),
                                       ),
                                     ),
@@ -160,10 +239,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               DataRow(
                                 color: WidgetStatePropertyAll(AppColors.total.withValues(alpha: isDark ? 0.25 : 0.15)),
                                 cells: [
-                                  for (final v in d.report!.footer!)
+                                  for (var i = 0; i < d.report!.footer!.length; i++)
                                     DataCell(Text(
-                                      Report.cell(v),
-                                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF38BDF8) : AppColors.total),
+                                      Report.cell(d.report!.footer![i]),
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w900,
+                                        color: (_kind == 'date_range' && i >= 4 && i <= 6)
+                                            ? const Color(0xFF0D9488)
+                                            : (_kind == 'date_range' && i == d.report!.footer!.length - 1 && (Report.cell(d.report!.footer![i]) == '-' || Report.cell(d.report!.footer![i]) == ' - '))
+                                                ? const Color(0xFFEF4444)
+                                                : (isDark ? const Color(0xFF38BDF8) : AppColors.total),
+                                      ),
                                     )),
                                 ],
                               ),

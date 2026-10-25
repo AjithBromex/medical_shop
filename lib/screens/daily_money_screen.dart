@@ -58,7 +58,7 @@ class _DailyMoneyScreenState extends State<DailyMoneyScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 2. Row of 2: Cash & Gpay/cheque/CN
+            // 2. Row of 2: Cash & Gpay/NEFT/Others
             Row(
               children: [
                 Expanded(
@@ -73,7 +73,7 @@ class _DailyMoneyScreenState extends State<DailyMoneyScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: MiniStatCard(
-                    label: 'Gpay/cheque/CN',
+                    label: 'Gpay/NEFT/Others',
                     value: inr(d.t.gpay + d.t.cheque),
                     icon: Icons.account_balance_outlined,
                     iconColor: const Color(0xFF3B82F6),
@@ -264,7 +264,7 @@ class _DailyMoneyScreenState extends State<DailyMoneyScreen> {
                             DataColumn(label: Text('Cash', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
                             DataColumn(label: Text('Expenses', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
                             DataColumn(label: Text('Remaining Cash\n(Cash − Exp)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
-                            DataColumn(label: Text('Gpay/cheque/CN', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
+                            DataColumn(label: Text('Gpay/NEFT/Others', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
                             DataColumn(label: Text('Total Collection', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
                             DataColumn(label: Text('Total Remaining', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
                           ],

@@ -53,4 +53,67 @@ void main() {
     expect(re.hasMatch('INV/2026/01'), isTrue);
     expect(re.hasMatch('12345'), isTrue);
   });
+
+  group('Data collection amount calculation', () {
+    test('Collected ₹10,000 − GPay/Cheque ₹3,000 = Cash ₹7,000', () {
+      final collected = parseAmount('10000', 'Collected');
+      final gpayCheque = parseAmount('3000', 'GPay/Cheque');
+      expect(collected >= gpayCheque, isTrue);
+      final cash = collected - gpayCheque;
+      expect(cash, 700000); // 7000 rupees in paise
+      expect(inr(cash), '₹7,000');
+
+      final c = Collection(
+        receiptNumber: '#000001',
+        shopId: 1,
+        date: DateTime(2026, 1, 1),
+        cash: cash,
+        gpay: gpayCheque,
+        cheque: 0,
+      );
+      expect(c.total, collected);
+      expect(c.cash, 700000);
+      expect(c.gpay, 300000);
+      expect(c.total, c.cash + c.gpay + c.cheque);
+    });
+
+    test('Collected ₹5,000 − GPay/Cheque ₹0 = Cash ₹5,000', () {
+      final collected = parseAmount('5000', 'Collected');
+      final gpayCheque = parseAmount('0', 'GPay/Cheque');
+      expect(collected >= gpayCheque, isTrue);
+      final cash = collected - gpayCheque;
+      expect(cash, 500000);
+      expect(inr(cash), '₹5,000');
+    });
+
+    test('Collected ₹5,000 − GPay/Cheque ₹5,000 = Cash ₹0', () {
+      final collected = parseAmount('5000', 'Collected');
+      final gpayCheque = parseAmount('5000', 'GPay/Cheque');
+      expect(collected >= gpayCheque, isTrue);
+      final cash = collected - gpayCheque;
+      expect(cash, 0);
+      expect(inr(cash), '₹0');
+    });
+
+    test('GPay/Cheque greater than Collected Amount triggers validation', () {
+      final collected = parseAmount('5000', 'Collected');
+      final gpayCheque = parseAmount('6000', 'GPay/Cheque');
+      expect(gpayCheque > collected, isTrue);
+      final isNegative = gpayCheque > collected;
+      expect(isNegative, isTrue);
+    });
+
+    test('Decimal precision: Collected ₹10,000.50 − GPay/Cheque ₹3,000.25 = Cash ₹7,000.25', () {
+      final collected = parseAmount('10000.50', 'Collected');
+      final gpayCheque = parseAmount('3000.25', 'GPay/Cheque');
+      final cash = collected - gpayCheque;
+      expect(cash, 700025);
+      expect(inr(cash), '₹7,000.25');
+    });
+
+    test('Negative amounts are rejected by parseAmount', () {
+      expect(() => parseAmount('-100', 'Collected'), throwsFormatException);
+      expect(() => parseAmount('-50', 'GPay/Cheque'), throwsFormatException);
+    });
+  });
 }

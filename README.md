@@ -1,119 +1,159 @@
-# Medical Shop Collection Manager — Flutter
+# Oscar Pharma — Medical Shop Collection Manager
 
-A Flutter/Dart port of the Flask + SQLite web app. It runs **fully offline** on Android, iOS,
-Windows, macOS and Linux with a local SQLite database (sqflite).
-
-## Cloud Architecture & Multi-Device Sync
-
-The Flutter application stores all data permanently in **MongoDB Atlas** via an online hosted Node.js Express backend. It does **not** require your laptop to run or host anything once deployed.
-
-```
-┌────────────────────────┐      ┌────────────────────────┐
-│  Device A (Phone/Web)  │      │  Device B (Laptop/Tab) │
-└───────────┬────────────┘      └───────────┬────────────┘
-            │   REST API + API Key          │   REST API + API Key
-            └───────────────┬───────────────┘
-                            ▼
-              ┌───────────────────────────┐
-              │ Hosted Backend API        │
-              │ (Render / Railway / Cloud)│
-              └─────────────┬─────────────┘
-                            ▼
-              ┌───────────────────────────┐
-              │   MongoDB Atlas Database  │
-              └───────────────────────────┘
-```
-
-- **Online Saves:** Confirmed in the app only after the hosted backend saves them to MongoDB Atlas.
-- **Offline Durability:** When offline, changes are queued in a durable local SQLite table (`sync_queue`) and marked with an amber "Waiting to sync" badge.
-- **Auto Sync & Retry:** The background sync manager automatically retries pending changes when connectivity returns.
-- **Multi-Device Sync:** On app launch or refresh, latest records are pulled from Atlas so all devices stay in sync.
+An offline-first Flutter application for medical shop collection tracking, expense logging, and financial reporting across Android, iOS, Windows, macOS, Linux, and Web.
 
 ---
 
-## 1. Deploy the Backend Online (Render.com - Free & No Laptop Needed)
+## 1. Cloud Architecture: Google Drive `appDataFolder` & Local SQLite
 
-Deploy the backend to Render in a few clicks:
+This application operates on a **zero-central-server** privacy model. All data belongs strictly to the user and is stored in two locations only:
+1. **Locally on Device:** Inside a private SQLite database (`medical_shop_<user_id>.db`).
+2. **Cloud Backup & Sync:** Inside the user's **own personal Google Drive account**, in the hidden `appDataFolder` (`https://www.googleapis.com/auth/drive.appdata`).
 
-1. Push your repository to your GitHub account:
-   ```bash
-   git push origin main
+```
+┌─────────────────────────────────┐         ┌─────────────────────────────────┐
+│     Device A (Phone / Tab)      │         │      Device B (Laptop / PC)     │
+│   Local SQLite (medical_shop.db)│         │  Local SQLite (medical_shop.db) │
+└────────────────┬────────────────┘         └────────────────┬────────────────┘
+                 │                                           │
+                 │ Googleapis Drive v3                       │ Googleapis Drive v3
+                 │ (OAuth 2.0 / drive.appdata)               │ (OAuth 2.0 / drive.appdata)
+                 ▼                                           ▼
+      ┌─────────────────────────────────────────────────────────────┐
+      │         User's Personal Google Drive (appDataFolder)        │
+      │                  medical_shop_data.json                     │
+      │  (Hidden from Drive UI, isolated to this application only)  │
+      └─────────────────────────────────────────────────────────────┘
+```
+
+### Privacy & Security Guarantees
+- **No Shared / Third-party Servers:** No Render, Heroku, Node.js, or central MongoDB Atlas server.
+- **Isolated App Data Folder:** The `drive.appdata` scope grants access *only* to the app's hidden application folder. The app cannot see, read, or modify any personal files, documents, or photos in your Google Drive.
+- **Multi-Account Separation:** Switching Google accounts on the same device isolates data into separate SQLite databases (`medical_shop_<user_id>.db`).
+
+---
+
+## 2. Synchronization & Conflict Resolution Strategy
+
+- **Two-way Sync:**
+  - On app launch, on pull-to-refresh, debounced (2s) after local modifications, and periodically every 60s in the background.
+- **Conflict Resolution ("Latest `updated_at` Wins"):**
+  - Every table (`medical_shops`, `collections`, `expenses`, `expense_categories`) maintains an `updated_at_ms` UTC millisecond timestamp.
+  - When merging local changes with Google Drive, the record with the newer `updated_at_ms` timestamp is retained.
+- **Soft Deletes (Tombstones):**
+  - Records are not hard-deleted immediately; they are marked with `deleted = 1` and assigned a fresh `updated_at_ms` timestamp so deletions propagate across all synced devices.
+- **Offline Durability (`sync_queue`):**
+  - Mutations made while offline are saved immediately to local SQLite and queued in `sync_queue`.
+  - An amber "Waiting to sync" badge indicates pending items until internet connectivity is restored.
+
+---
+
+## 3. Safe Multi-Device Receipt Numbering
+
+### The Problem
+If two offline devices generate collections concurrently, both would assign `#00001` or `RC-000001`, leading to collisions when synced.
+
+### The Solution: Device Node Prefix (`#NODE-SEQUENCE`)
+- Each device generates a persistent installation Node Identifier (e.g. `D1`, `D2`, `TAB`).
+- Generated receipt numbers use this prefix: `#D1-00001`, `#D1-00002` on Device 1, and `#D2-00001` on Device 2.
+- **Benefits:**
+  - **Zero collisions:** Different devices will never generate the same receipt number while offline.
+  - **Permanent receipts:** Printed customer receipts never need to be renumbered at sync time.
+  - **Audit trail:** Invoices clearly denote which device created each collection.
+
+---
+
+## 4. Google Cloud Console Setup Checklist (One-Time)
+
+To enable Google Sign-In and Google Drive sync, complete the following steps in your Google Cloud account:
+
+### Step 1: Create a Google Cloud Project
+1. Open [Google Cloud Console](https://console.cloud.google.com/).
+2. Click **Select a project** > **New Project**.
+3. Name it `Medical Shop Manager` and click **Create**.
+
+### Step 2: Enable Google Drive API
+1. Navigate to **APIs & Services** > **Library**.
+2. Search for `Google Drive API` and click **Enable**.
+
+### Step 3: Configure OAuth Consent Screen
+1. Go to **APIs & Services** > **OAuth consent screen**.
+2. Select **External** and click **Create**.
+3. Fill in:
+   - **App name:** `Oscar Pharma Medical Shop Manager`
+   - **User support email:** Your email
+   - **Developer contact information:** Your email
+4. Under **Scopes**, click **Add or Remove Scopes**, and add:
+   - `https://www.googleapis.com/auth/drive.appdata` ("See, create, and delete its own configuration data in your Google Drive")
+5. Under **Test users**, add the Google email address(es) that will use the application.
+
+### Step 4: Create OAuth Client IDs
+
+#### A. Android
+1. Go to **APIs & Services** > **Credentials** > **Create Credentials** > **OAuth client ID**.
+2. Select **Application type:** `Android`.
+3. Set **Package name:** `com.ajithbromex.medical_shop_manager`.
+4. Set **SHA-1 certificate fingerprint:**
+   `79:CE:3C:10:B4:1D:FA:32:CE:A9:04:77:0A:B9:00:E3:2B:B1:10:05`
+
+#### B. Web (and Desktop Fallback)
+1. In **Credentials**, click **Create Credentials** > **OAuth client ID**.
+2. Select **Application type:** `Web application`.
+3. Add Authorized redirect URIs:
+   - `http://localhost`
+   - `http://localhost:8080`
+4. Copy the generated **Client ID** (e.g. `xxxx.apps.googleusercontent.com`).
+5. In `web/index.html`, update:
+   ```html
+   <meta name="google-signin-client_id" content="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com">
    ```
-2. Log in to **[dashboard.render.com](https://dashboard.render.com/)**.
-3. Click **New +** > **Web Service**.
-4. Connect your GitHub repository (`AjithBromex/medical_shop`).
-5. Configure the service:
-   - **Name:** `medical-shop-api` (or your preferred name)
-   - **Root Directory:** `server`
-   - **Environment:** `Node`
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm start`
-6. Under **Environment Variables**, add:
-   - `MONGODB_URI`: Your MongoDB Atlas connection string (e.g. `mongodb+srv://<user>:<password>@<cluster>.mongodb.net/medical_shop?retryWrites=true&w=majority`)
-   - `API_KEY`: A strong secret key of your choice (e.g. `my_secret_token_123`)
-7. Click **Deploy Web Service**.
-8. Once deployed, copy your public URL (e.g., `https://medical-shop-api.onrender.com`).
-   Your API endpoint is: `https://medical-shop-api.onrender.com/api`.
 
 ---
 
-## 2. Configure & Run the Flutter App
+## 5. Migrating Existing MongoDB Data to Google Drive
 
-You can connect any phone, tablet, or PC to your online backend:
+If you have existing data in MongoDB Atlas:
 
-### Option A: In-App Configuration (Easiest - No Rebuild Needed)
-1. Launch the app on your phone, tablet, or PC.
-2. Tap the **Cloud icon** in the top bar (or go to **Admin - Medical Shops** > **Cloud Server Settings**).
-3. Enter your hosted backend API URL (e.g., `https://medical-shop-api.onrender.com/api`) and your `API_KEY`.
-4. Tap **Save & Connect**. Your app immediately links to your cloud database!
-
-### Option B: Build with Compile-time Flags
-```bash
-flutter run --dart-define=API_BASE_URL=https://medical-shop-api.onrender.com/api --dart-define=API_KEY=my_secret_token_123
-```
-
-To build a release APK for your Android phone:
-```bash
-flutter build apk --dart-define=API_BASE_URL=https://medical-shop-api.onrender.com/api --dart-define=API_KEY=my_secret_token_123
-```
+1. **Export collections from MongoDB Atlas as JSON:**
+   ```bash
+   mongoexport --uri="<MONGODB_ATLAS_URI>" --collection=collections --out=collections.json --jsonArray
+   ```
+2. **Import in the app:**
+   - Launch the Flutter app.
+   - Open **Admin - Customers** (or tap your Profile Avatar).
+   - Click **Import from MongoDB**.
+   - Paste the JSON content and tap **Import & Save to Drive**.
+   - All legacy shops and collections will be written to local SQLite and automatically synced to your Google Drive `appDataFolder`!
 
 ---
 
-## 3. Run Tests
+## 6. Running Tests & Building the App
+
+### Run Unit & Business Rule Tests
 ```bash
 flutter test
 ```
+Validates:
+- Integer paise financial calculations (`total = cash + gpay + cheque`).
+- Date-range and shop breakdowns.
+- Google Drive merge conflicts and tombstone soft-deletes.
+- Case-insensitive receipt uniqueness.
+- PDF generation and CSV exports.
 
-On the **first launch** the sign-in screen asks you to create the admin account (username ≥ 3 and
-password ≥ 8 characters). Passwords are stored as salted SHA-256 hashes; 5 failed sign-ins lock
-sign-in for 5 minutes.
+### Run Code Analysis
+```bash
+flutter analyze
+```
 
-Android: set `minSdkVersion 21` or higher (default). Printing and sharing need no extra permissions.
+### Build APK for Android
+```bash
+flutter build apk --release
+```
 
-## What was ported (Flask → Flutter)
-| Flask | Flutter |
-|---|---|
-| `models.py` (+ CHECK / UNIQUE / NOCASE / AUTOINCREMENT) | `lib/data/database.dart` (same schema) and `models.dart` |
-| `services.py` (all totals via SQL) | `lib/data/repository.dart` |
-| `utils.py` (paise, ₹ Indian grouping, CSV safety) | `lib/core/money.dart`, `dates.dart`, `Report.cell` |
-| login / dashboard | `login_screen.dart`, `dashboard_screen.dart` |
-| add / edit collection, history, receipt | `collection_form.dart`, `collection_history.dart`, `receipt_screen.dart` (PDF print) |
-| collection analysis, daily money | `analysis_screen.dart`, `daily_money_screen.dart` |
-| expenses + categories | `expenses_screen.dart` |
-| 6 reports + CSV export | `reports_screen.dart`, `report_export.dart` |
-| admin shops, backup / restore, seed-sample | `shops_screen.dart`, `AppDatabase.backup/restore`, `Repository.seedSample` |
-| Chart.js | fl_chart (`widgets/charts.dart`) |
+---
 
-## Business rules kept
-- Money is stored as **integer paise**; totals are always calculated live from saved rows, so edits and deletes refresh every screen (`AppState.revision`).
-- `total = cash + gpay + cheque` (database CHECK constraint). At least one amount must be > 0; negative or invalid amounts are rejected.
-- Receipt numbers are unique (case-insensitive) and never reused after a delete (`RC-000001` style from SQLite's AUTOINCREMENT counter).
-- Expenses are deducted only from the combined daily total: `Remaining = (Cash + GPay + Cheque) − Expenses`.
-- Inactive shops stay in history and reports; a shop with collections cannot be deleted, only deactivated.
-- Date filters use the collection / expense date. The save button locks while saving.
-- CSV exports use the same filters as the screen, include a UTF-8 BOM for Excel and neutralise formula injection.
+## 7. Known Limitations & Architecture Notes
 
-## Differences from the web version
-- Backups are saved to the app documents folder (`medical_shop_backups`) and opened in the share sheet, so you can send them to Drive / WhatsApp / e-mail. Restore picks a `.db` file and saves the current data as a safety backup first.
-- Receipts print / save as PDF through the system print dialog (`printing` package).
-- The data lives on the device. There is no server, so no CSRF or session cookies are needed.
+1. **Snapshot / Eventual Sync vs. WebSockets:** Google Drive sync exchanges snapshots and change logs over HTTPS. Sync occurs on launch, save, pull-to-refresh, and every 60s, rather than sub-millisecond real-time streaming.
+2. **No Central Master Dashboard:** Because data is stored in each individual user's Google account, there is no shared central server database where an admin can view everyone's data unless users sign in with the same Google account.
+3. **Desktop (Windows/Linux) Sign-In:** Uses a secure browser OAuth 2.0 loopback flow (`localhost`) to acquire tokens via `googleapis_auth`.

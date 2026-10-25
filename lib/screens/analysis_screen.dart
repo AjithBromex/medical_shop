@@ -64,7 +64,7 @@ Widget _totalsGrid(Totals t) => Column(
             const SizedBox(width: 12),
             Expanded(
               child: MiniStatCard(
-                label: 'Gpay/cheque/CN',
+                label: 'Gpay/NEFT/Others',
                 value: inr(t.gpay + t.cheque),
                 icon: Icons.account_balance_outlined,
                 iconColor: const Color(0xFF3B82F6),
@@ -87,7 +87,7 @@ Widget _shopChart(List<ShopBreakdown> rows) => rows.isEmpty
         labels: [for (final r in rows) r.name],
         bars: [
           Series('Cash', AppColors.cash, [for (final r in rows) r.cash]),
-          Series('Gpay/cheque/CN', AppColors.gpay, [for (final r in rows) r.gpay + r.cheque]),
+          Series('Gpay/NEFT/Others', AppColors.gpay, [for (final r in rows) r.gpay + r.cheque]),
         ],
       );
 
@@ -112,7 +112,7 @@ Widget _shopTable(BuildContext context, List<ShopBreakdown> rows) {
           DataColumn(label: Text('Medical shop', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor))),
           DataColumn(label: Text('Txns', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
           DataColumn(label: Text('Cash', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
-          DataColumn(label: Text('Gpay/cheque/CN', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
+          DataColumn(label: Text('Gpay/NEFT/Others', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
           DataColumn(label: Text('Total', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
         ],
         rows: [
@@ -220,7 +220,7 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
                     labels: [for (final m in monthlyAsc) m.label],
                     bars: [
                       Series('Cash', AppColors.cash, [for (final m in monthlyAsc) m.cash]),
-                      Series('Gpay/cheque/CN', AppColors.gpay, [for (final m in monthlyAsc) m.gpay + m.cheque]),
+                      Series('Gpay/NEFT/Others', AppColors.gpay, [for (final m in monthlyAsc) m.gpay + m.cheque]),
                     ],
                   ),
           ),
@@ -291,7 +291,7 @@ class _AllTabState extends State<_AllTab> with AutomaticKeepAliveClientMixin {
                           DataColumn(label: Text('Period', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor))),
                           DataColumn(label: Text('Txns', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
                           DataColumn(label: Text('Cash', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
-                          DataColumn(label: Text('Gpay/cheque/CN', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
+                          DataColumn(label: Text('Gpay/NEFT/Others', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
                           DataColumn(label: Text('Total', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: textColor)), numeric: true),
                         ],
                         rows: [

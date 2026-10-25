@@ -65,7 +65,7 @@ void main() {
       const report = Report(
         'date_range',
         'Date-range Collection Report',
-        ['#', 'Receipt No.', 'Date', 'Customer', 'Cash', 'Gpay/cheque/CN', 'Total', 'Notes'],
+        ['#', 'Receipt No.', 'Date', 'Customer', 'Cash', 'Gpay/NEFT/Others', 'Total', 'Notes'],
         [
           ['1', '#000001', '19-10-2026', 'rr', '₹1,000', '₹200', '₹1,200', '-'],
           ['2', '#000002', '19-10-2026', 'rr', '₹500', '₹0', '₹500', '-'],
@@ -81,6 +81,11 @@ void main() {
       final doc = await buildReportPdfDocument(report, filters);
       final bytes = await doc.save();
       expect(bytes.isNotEmpty, isTrue);
+
+      // Also verify with explicit expense total matching the exact reference (₹300 expense -> ₹3,200 remaining)
+      final docWithExpense = await buildReportPdfDocument(report, filters, expenseTotal: 30000);
+      final bytesWithExpense = await docWithExpense.save();
+      expect(bytesWithExpense.isNotEmpty, isTrue);
     });
   });
 }

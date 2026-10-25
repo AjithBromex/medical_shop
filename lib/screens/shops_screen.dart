@@ -7,11 +7,11 @@ import '../core/money.dart';
 import '../core/theme.dart';
 import '../data/database.dart';
 import '../data/models.dart';
-import '../data/mongo_database.dart';
 import '../data/repository.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/sync_status_widget.dart';
+import 'cloud_migration_dialog.dart';
 
 
 /// Admin: manage shops, create / share / restore backups, optional sample data.
@@ -86,11 +86,10 @@ class _ShopsScreenState extends State<ShopsScreen> {
 
   Future<void> _restore() async {
     try {
-      toast(context, 'Syncing data with cloud backup...');
-      await MongoDatabase.instance.syncAtlasToLocal();
+      toast(context, 'Syncing with Google Drive...');
+      await context.read<AppState>().triggerSync(silent: false);
       if (!mounted) return;
-      context.read<AppState>().changed();
-      toast(context, 'Data synced successfully.');
+      toast(context, 'Data synced successfully with Google Drive.');
     } catch (e) {
       if (mounted) toast(context, 'Sync failed: $e', error: true);
     }
@@ -305,7 +304,17 @@ class _ShopsScreenState extends State<ShopsScreen> {
                   icon: Icons.sync_rounded,
                   accentColor: const Color(0xFF10B981),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  child: const Text('Sync with cloud backup'),
+                  child: const Text('Sync with Google Drive'),
+                ),
+                GlassButton(
+                  onPressed: () => showDialog(
+                    context: context,
+                    builder: (ctx) => const CloudMigrationDialog(),
+                  ),
+                  icon: Icons.cloud_download_outlined,
+                  accentColor: Colors.deepPurple,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: const Text('Import from MongoDB'),
                 ),
               ]),
             ),

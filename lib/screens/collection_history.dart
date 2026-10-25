@@ -74,7 +74,7 @@ class _CollectionHistoryState extends State<CollectionHistory> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: MiniStatCard(
-                    label: 'Gpay/cheque/CN',
+                    label: 'Gpay/NEFT/Others',
                     value: inr(h.totals.gpay + h.totals.cheque),
                     icon: Icons.account_balance_outlined,
                     iconColor: const Color(0xFF3B82F6),

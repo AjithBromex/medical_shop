@@ -2,19 +2,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../data/api_service.dart';
-import '../data/mongo_database.dart';
+import '../data/auth_service.dart';
+import '../data/database.dart';
+import '../data/drive_sync_service.dart';
 import '../data/repository.dart';
 import '../data/sync_queue.dart';
 
-/// Session + a `revision` counter + automatic cloud sync state + theme preference.
-/// Runs continuous automatic background sync with MongoDB Atlas every 12s,
-/// on app resume, and immediately on every data change.
+/// Session + Google Account state + automatic Drive sync state + theme preference.
+/// Syncs data privately to each user's Google Drive appDataFolder.
 class AppState extends ChangeNotifier with WidgetsBindingObserver {
   final Repository repo = Repository.instance;
 
-  String? admin;
-  bool needsSetup = false;
+  AuthUser? currentUser;
+  bool get isSignedIn => currentUser != null;
+  String? get admin => currentUser?.displayName ?? currentUser?.email;
+
   bool ready = false;
   int revision = 0;
 
@@ -24,15 +26,10 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   bool isSyncing = false;
   int pendingSyncCount = 0;
   bool isOnline = true;
-  Timer? _autoCloudSyncTimer;
-
-  int _fails = 0;
-  DateTime? _firstFail;
-  static const maxFails = 5;
-  static const lockSeconds = 300;
+  String? syncErrorMessage;
+  DateTime? lastSyncTime;
 
   Future<void> loadInitialSettings() async {
-    // Fast load persisted theme preference (<5ms)
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedTheme = prefs.getString('theme_mode');
@@ -41,8 +38,21 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       } else if (savedTheme == 'light') {
         themeMode = ThemeMode.light;
       }
+
+      final lastMs = prefs.getInt('last_drive_sync_time');
+      if (lastMs != null) {
+        lastSyncTime = DateTime.fromMillisecondsSinceEpoch(lastMs);
+      }
+
+      currentUser = await AuthService.instance.init();
+      if (currentUser != null) {
+        await AppDatabase.instance.switchAccount(currentUser!.id);
+      } else {
+        await AppDatabase.instance.switchAccount('default');
+      }
     } catch (_) {}
     ready = true;
+    notifyListeners();
   }
 
   void startBackgroundServices() {
@@ -52,40 +62,43 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _initBackgroundServices() async {
     try {
-      await ApiService.instance.init();
-      needsSetup = !await repo.hasAdmin();
-      notifyListeners();
+      if (!ready) {
+        await loadInitialSettings();
+      }
 
-      // Start background queue manager (every 10s)
-      SyncQueueManager.instance.startAutoSync(interval: const Duration(seconds: 10));
+      // Connect DriveSyncService lifecycle callbacks to AppState for real-time UI updates
+      DriveSyncService.instance.onSyncStarted = () {
+        if (!isSyncing) {
+          isSyncing = true;
+          notifyListeners();
+        }
+      };
+      DriveSyncService.instance.onSyncCompleted = () async {
+        isSyncing = false;
+        pendingSyncCount = await SyncQueueManager.instance.getPendingCount();
+        lastSyncTime = DateTime.now();
+        isOnline = true;
+        syncErrorMessage = null;
+        revision++;
+        notifyListeners();
+      };
+
+      // Start background sync services
+      SyncQueueManager.instance.startAutoSync(interval: const Duration(seconds: 15));
+      DriveSyncService.instance.startPeriodicSync(interval: const Duration(seconds: 60));
       await updatePendingCount();
 
-      // Sync cloud data from MongoDB Atlas in background without blocking app startup
-      await triggerSync(silent: true);
-
-      // Start continuous automatic two-way background sync every 12 seconds
-      _startContinuousSync();
+      if (isSignedIn) {
+        await triggerSync(silent: true);
+      }
     } catch (e) {
-      debugPrint('[AppState] background sync error: $e');
+      debugPrint('[AppState] Init error: $e');
     }
-  }
-
-  Future<void> init() async {
-    await loadInitialSettings();
-    startBackgroundServices();
-  }
-
-  void _startContinuousSync() {
-    _autoCloudSyncTimer?.cancel();
-    _autoCloudSyncTimer = Timer.periodic(const Duration(seconds: 12), (_) {
-      triggerSync(silent: true);
-    });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      // Auto-sync immediately when phone unlocks or app returns to foreground
+    if (state == AppLifecycleState.resumed && isSignedIn) {
       triggerSync(silent: true);
     }
   }
@@ -93,7 +106,10 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _autoCloudSyncTimer?.cancel();
+    DriveSyncService.instance.onSyncStarted = null;
+    DriveSyncService.instance.onSyncCompleted = null;
+    DriveSyncService.instance.stopPeriodicSync();
+    SyncQueueManager.instance.stopAutoSync();
     super.dispose();
   }
 
@@ -105,57 +121,81 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> triggerSync({bool silent = false}) async {
     if (isSyncing) return;
     isSyncing = true;
-    if (!silent) notifyListeners();
+    syncErrorMessage = null;
+    notifyListeners();
 
     try {
-      isOnline = await ApiService.instance.checkHealth();
-      await MongoDatabase.instance.syncAtlasToLocal();
-      pendingSyncCount = await SyncQueueManager.instance.getPendingCount();
-    } catch (_) {
+      final success = await DriveSyncService.instance.triggerSync(silent: silent);
+      isOnline = success;
+      if (success) {
+        lastSyncTime = DateTime.now();
+        syncErrorMessage = null;
+      }
+    } on DriveSyncException catch (e) {
+      syncErrorMessage = e.message;
+      if (e.isAuthError) {
+        isOnline = false;
+      }
+    } catch (e) {
       isOnline = false;
+      syncErrorMessage = 'Sync failed. Will retry automatically.';
     } finally {
       isSyncing = false;
+      pendingSyncCount = await SyncQueueManager.instance.getPendingCount();
       revision++;
       notifyListeners();
     }
   }
 
-  bool get locked {
-    if (_firstFail == null) return false;
-    if (DateTime.now().difference(_firstFail!).inSeconds > lockSeconds) {
-      _fails = 0;
-      _firstFail = null;
+  Future<bool> signIn({String? desktopClientId, String? desktopClientSecret}) async {
+    try {
+      final user = await AuthService.instance.signIn(
+        desktopClientId: desktopClientId,
+        desktopClientSecret: desktopClientSecret,
+      );
+      if (user != null) {
+        currentUser = user;
+        await AppDatabase.instance.switchAccount(user.id);
+        revision++;
+        await updatePendingCount();
+        notifyListeners();
+        await triggerSync(silent: false);
+        return true;
+      }
       return false;
+    } catch (e) {
+      debugPrint('[AppState] signIn error: $e');
+      rethrow;
     }
-    return _fails >= maxFails;
   }
 
-  /// Returns an error message, or null on success.
-  Future<String?> login(String username, String password) async {
-    if (locked) return 'Too many failed attempts. Please wait a few minutes and try again.';
-    final user = await repo.login(username, password);
-    if (user == null) {
-      _firstFail ??= DateTime.now();
-      _fails++;
-      return 'Invalid username or password.';
+  Future<void> signOut() async {
+    await AuthService.instance.signOut();
+    currentUser = null;
+    await AppDatabase.instance.switchAccount('default');
+    revision++;
+    await updatePendingCount();
+    notifyListeners();
+  }
+
+  Future<void> switchAccount({String? desktopClientId, String? desktopClientSecret}) async {
+    try {
+      final user = await AuthService.instance.switchAccount(
+        desktopClientId: desktopClientId,
+        desktopClientSecret: desktopClientSecret,
+      );
+      if (user != null) {
+        currentUser = user;
+        await AppDatabase.instance.switchAccount(user.id);
+        revision++;
+        await updatePendingCount();
+        notifyListeners();
+        await triggerSync(silent: false);
+      }
+    } catch (e) {
+      debugPrint('[AppState] switchAccount error: $e');
+      rethrow;
     }
-    _fails = 0;
-    _firstFail = null;
-    admin = user;
-    notifyListeners();
-    return null;
-  }
-
-  Future<void> createFirstAdmin(String username, String password) async {
-    await repo.createAdmin(username, password);
-    needsSetup = false;
-    admin = username.trim();
-    notifyListeners();
-  }
-
-  void logout() {
-    admin = null;
-    notifyListeners();
   }
 
   void toggleTheme() async {
@@ -176,12 +216,11 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     } catch (_) {}
   }
 
-  /// Call after any data change to immediately sync to cloud.
+  /// Call after any data change to immediately queue and trigger sync to Google Drive.
   void changed() {
     revision++;
     updatePendingCount();
     notifyListeners();
-    // Auto-sync immediately in background whenever any change occurs
-    triggerSync(silent: true);
+    DriveSyncService.instance.scheduleDebouncedSync(delay: const Duration(milliseconds: 100));
   }
 }

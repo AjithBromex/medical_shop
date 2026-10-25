@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../core/theme.dart';
+import '../state/app_state.dart';
 import '../widgets/sync_status_widget.dart';
 import '../widgets/theme_mode_switcher.dart';
 import 'analysis_screen.dart';
@@ -33,8 +35,8 @@ class ShellState extends State<Shell> {
     _Dest('Dashboard', Icons.speed, () => DashboardScreen(onGo: go)),
     _Dest('Add Collection', Icons.add_circle_outline, () => CollectionForm(onSaved: () => go(0))),
     const _Dest('Collection History', Icons.menu_book_outlined, CollectionHistory.new),
-    const _Dest('Collection Analysis', Icons.bar_chart, AnalysisScreen.new),
     const _Dest('Expenses', Icons.confirmation_number_outlined, ExpensesScreen.new),
+    const _Dest('Collection Analysis', Icons.bar_chart, AnalysisScreen.new),
     const _Dest('Daily Money', Icons.payments_outlined, DailyMoneyScreen.new),
     const _Dest('Reports', Icons.description_outlined, ReportsScreen.new),
     const _Dest('Admin - Customers', Icons.storefront_outlined, ShopsScreen.new),
@@ -115,10 +117,10 @@ class ShellState extends State<Shell> {
             ),
             const SizedBox(height: 12),
             _MoreSheetTile(
-              title: 'Expenses',
-              subtitle: 'Daily store expenses & category breakdown',
-              icon: Icons.confirmation_number_outlined,
-              color: AppColors.expenses,
+              title: 'Collection Analysis',
+              subtitle: 'Trends, graphs, and performance metrics',
+              icon: Icons.bar_chart_rounded,
+              color: AppColors.total,
               isSelected: _index == 4,
               onTap: () {
                 Navigator.pop(ctx);
@@ -275,8 +277,8 @@ class ShellState extends State<Shell> {
                         onTap: () => go(1),
                       ),
                       _MobileNavItem(
-                        icon: Icons.bar_chart_rounded,
-                        label: 'Analysis',
+                        icon: Icons.confirmation_number_outlined,
+                        label: 'Expenses',
                         isSelected: _index == 3,
                         onTap: () => go(3),
                       ),
@@ -650,6 +652,64 @@ class _SideNav extends StatelessWidget {
                     );
                   },
                 ),
+              ),
+              Consumer<AppState>(
+                builder: (context, state, _) {
+                  final user = state.currentUser;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: isDark ? const Color(0xFF334155) : AppColors.border, width: 1)),
+                    ),
+                    child: InkWell(
+                      onTap: () => showCloudSyncSheet(context),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: AppColors.total.withValues(alpha: 0.15),
+                              child: Text(
+                                (user != null && user.displayName.isNotEmpty ? user.displayName[0] : 'G').toUpperCase(),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.total),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    user?.displayName ?? 'Not signed in',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark ? Colors.white : AppColors.textPrimary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    user?.email ?? 'Tap to sign in',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.cloud_sync_outlined, size: 18, color: AppColors.total),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),

@@ -7,13 +7,14 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 const defaultCategories = ['Petrol', 'Food', 'Travel', 'Parking', 'Personal Expense', 'Other'];
-const dbFileName = 'medical_shop.db';
+const defaultDbFileName = 'medical_shop.db';
 
-/// Opens the SQLite database. Same schema and constraints as the Flask app.
+/// Opens the SQLite database separated per Google Account ID.
 class AppDatabase {
   AppDatabase._();
   static final AppDatabase instance = AppDatabase._();
   Database? _db;
+  String? _currentAccountId;
 
   static bool get _isDesktop => !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 
@@ -24,6 +25,28 @@ class AppDatabase {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }
+  }
+
+  String get currentAccountId => _currentAccountId ?? 'default';
+
+  String _sanitize(String? id) {
+    if (id == null || id.trim().isEmpty) return 'default';
+    return id.trim().replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
+  }
+
+  String get dbFileName {
+    final sanitized = _sanitize(_currentAccountId);
+    if (sanitized == 'default') return defaultDbFileName;
+    return 'medical_shop_$sanitized.db';
+  }
+
+  /// Switches active database to a specific Google account ID.
+  Future<void> switchAccount(String? accountId) async {
+    final newId = accountId?.trim();
+    if (_currentAccountId == newId && _db != null && _db!.isOpen) return;
+    await close();
+    _currentAccountId = newId;
+    await db; // Re-open
   }
 
   Future<String> get dbPath async {
@@ -43,13 +66,36 @@ class AppDatabase {
     return dir;
   }
 
-  Future<Database> get db async => _db ??= await _open();
+  Future<Database> get db async {
+    if (_db != null && _db!.isOpen) return _db!;
+    _db = await _open();
+    return _db!;
+  }
 
   Future<Database> _open() async {
     final path = await dbPath;
+
+    // If an account-specific DB does not exist yet, but legacy medical_shop.db does,
+    // copy the legacy database over so existing local data is seamlessly preserved!
+    if (!kIsWeb && dbFileName != defaultDbFileName) {
+      final targetFile = File(path);
+      if (!await targetFile.exists()) {
+        final legacyDir = _isDesktop ? await getApplicationSupportDirectory() : Directory(await getDatabasesPath());
+        final legacyFile = File(p.join(legacyDir.path, defaultDbFileName));
+        if (await legacyFile.exists()) {
+          try {
+            await legacyFile.copy(path);
+            debugPrint('[AppDatabase] Migrated existing data to $dbFileName');
+          } catch (e) {
+            debugPrint('[AppDatabase] Legacy copy error: $e');
+          }
+        }
+      }
+    }
+
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
       onConfigure: (d) async => d.execute('PRAGMA foreign_keys = ON'),
       onUpgrade: (d, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -74,6 +120,46 @@ CREATE TABLE IF NOT EXISTS sync_queue (
   last_error TEXT
 )''');
         }
+
+        if (oldVersion < 3) {
+          // Add updated_at_ms and deleted soft-delete flag
+          try {
+            await d.execute("ALTER TABLE medical_shops ADD COLUMN updated_at_ms INTEGER NOT NULL DEFAULT 0");
+          } catch (_) {}
+          try {
+            await d.execute("ALTER TABLE medical_shops ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0");
+          } catch (_) {}
+
+          try {
+            await d.execute("ALTER TABLE collections ADD COLUMN updated_at_ms INTEGER NOT NULL DEFAULT 0");
+          } catch (_) {}
+          try {
+            await d.execute("ALTER TABLE collections ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0");
+          } catch (_) {}
+
+          try {
+            await d.execute("ALTER TABLE expenses ADD COLUMN updated_at_ms INTEGER NOT NULL DEFAULT 0");
+          } catch (_) {}
+          try {
+            await d.execute("ALTER TABLE expenses ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0");
+          } catch (_) {}
+
+          try {
+            await d.execute("ALTER TABLE expense_categories ADD COLUMN updated_at_ms INTEGER NOT NULL DEFAULT 0");
+          } catch (_) {}
+          try {
+            await d.execute("ALTER TABLE expense_categories ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0");
+          } catch (_) {}
+
+          // Backfill updated_at_ms with current timestamp for existing rows that had 0
+          final nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
+          try {
+            await d.execute("UPDATE medical_shops SET updated_at_ms = $nowMs WHERE updated_at_ms = 0");
+            await d.execute("UPDATE collections SET updated_at_ms = $nowMs WHERE updated_at_ms = 0");
+            await d.execute("UPDATE expenses SET updated_at_ms = $nowMs WHERE updated_at_ms = 0");
+            await d.execute("UPDATE expense_categories SET updated_at_ms = $nowMs WHERE updated_at_ms = 0");
+          } catch (_) {}
+        }
       },
       onCreate: (d, _) async {
         await d.execute('''
@@ -83,6 +169,8 @@ CREATE TABLE medical_shops (
   address TEXT, phone TEXT, notes TEXT,
   is_active INTEGER NOT NULL DEFAULT 1,
   sync_status TEXT NOT NULL DEFAULT 'synced',
+  deleted INTEGER NOT NULL DEFAULT 0,
+  updated_at_ms INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 )''');
         await d.execute('''
@@ -97,6 +185,8 @@ CREATE TABLE collections (
   total_amount INTEGER NOT NULL DEFAULT 0,
   notes TEXT,
   sync_status TEXT NOT NULL DEFAULT 'synced',
+  deleted INTEGER NOT NULL DEFAULT 0,
+  updated_at_ms INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
   CONSTRAINT ck_collection_amounts_non_negative CHECK (cash_amount >= 0 AND gpay_amount >= 0 AND cheque_amount >= 0),
@@ -107,6 +197,8 @@ CREATE TABLE collections (
 CREATE TABLE expense_categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+  deleted INTEGER NOT NULL DEFAULT 0,
+  updated_at_ms INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 )''');
         await d.execute('''
@@ -118,19 +210,13 @@ CREATE TABLE expenses (
   amount INTEGER NOT NULL,
   notes TEXT,
   sync_status TEXT NOT NULL DEFAULT 'synced',
+  deleted INTEGER NOT NULL DEFAULT 0,
+  updated_at_ms INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
   CONSTRAINT ck_expense_amount_positive CHECK (amount > 0)
 )''');
         await d.execute('CREATE INDEX ix_expense_date_category ON expenses(expense_date, category)');
-        await d.execute('''
-CREATE TABLE admin_users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT NOT NULL COLLATE NOCASE UNIQUE,
-  password_hash TEXT NOT NULL,
-  salt TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
-)''');
         await d.execute('''
 CREATE TABLE sync_queue (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -142,15 +228,22 @@ CREATE TABLE sync_queue (
   attempts INTEGER NOT NULL DEFAULT 0,
   last_error TEXT
 )''');
+        final nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
         for (final c in defaultCategories) {
-          await d.insert('expense_categories', {'name': c});
+          await d.insert('expense_categories', {
+            'name': c,
+            'deleted': 0,
+            'updated_at_ms': nowMs,
+          });
         }
       },
     );
   }
 
   Future<void> close() async {
-    await _db?.close();
+    if (_db != null && _db!.isOpen) {
+      await _db!.close();
+    }
     _db = null;
   }
 
@@ -167,7 +260,7 @@ CREATE TABLE sync_queue (
     final now = DateTime.now();
     String two(int n) => n.toString().padLeft(2, '0');
     final stamp = '${now.year}${two(now.month)}${two(now.day)}_${two(now.hour)}${two(now.minute)}${two(now.second)}';
-    final dest = File(p.join(dir.path, 'medical_shop_$stamp.db'));
+    final dest = File(p.join(dir.path, '${p.basenameWithoutExtension(dbFileName)}_$stamp.db'));
     return File(await dbPath).copy(dest.path);
   }
 
@@ -176,14 +269,13 @@ CREATE TABLE sync_queue (
     if (kIsWeb) {
       throw UnsupportedError('Database restore is not supported in web browsers.');
     }
-    // validate before touching anything
     final probe = await openDatabase(backupFile.path, readOnly: true);
     try {
       final tables = (await probe.rawQuery("SELECT name FROM sqlite_master WHERE type='table'"))
           .map((r) => r['name'] as String)
           .toSet();
       final ok = (await probe.rawQuery('PRAGMA integrity_check')).first.values.first == 'ok';
-      if (!ok || !{'collections', 'expenses', 'medical_shops', 'admin_users'}.every(tables.contains)) {
+      if (!ok || !{'collections', 'expenses', 'medical_shops'}.every(tables.contains)) {
         throw const FormatException('That file is not a valid Medical Shop Manager backup.');
       }
     } finally {
