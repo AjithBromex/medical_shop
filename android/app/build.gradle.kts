@@ -25,10 +25,18 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        getByName("debug") {
+            val localDebugKeystore = file("debug.keystore")
+            if (localDebugKeystore.exists()) {
+                storeFile = localDebugKeystore
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Signing with fixed project debug keystore so SHA-1 never changes
             signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

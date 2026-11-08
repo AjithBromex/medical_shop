@@ -135,6 +135,9 @@ class AuthService {
     }
 
     try {
+      try {
+        await _googleSignIn.signOut();
+      } catch (_) {}
       final account = await _googleSignIn.signIn();
       if (account == null) return null;
 

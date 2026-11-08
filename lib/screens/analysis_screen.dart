@@ -74,9 +74,9 @@ Widget _totalsGrid(Totals t) => Column(
           ],
         ),
         const SizedBox(height: 12),
-        WideStatCard.totalCollection(
-          value: inr(t.total),
-          sub: '${t.count} transaction${t.count == 1 ? '' : 's'}',
+        TotalCollectionCard(
+          amount: inr(t.total),
+          subtext: '${t.count} transaction${t.count == 1 ? '' : 's'}',
         ),
       ],
     );

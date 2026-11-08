@@ -49,7 +49,7 @@ class _DailyMoneyScreenState extends State<DailyMoneyScreen> {
             Center(child: DayNav(day: _day, onChanged: (x) => setState(() => _day = x))),
             const SizedBox(height: 12),
 
-            // 1. Hero Banner: Remaining Cash
+            // 1. Hero Card: Remaining Cash (Current Balance)
             HeroStatCard(
               amount: inr(d.t.cash - d.expenses),
               title: 'Remaining cash',
@@ -58,7 +58,14 @@ class _DailyMoneyScreenState extends State<DailyMoneyScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 2. Row of 2: Cash & Gpay/NEFT/Others
+            // 2. Full Width Card: Total Collection (Emerald Green with 3 Glowing Bars)
+            TotalCollectionCard(
+              amount: inr(d.t.total),
+              subtext: '${d.t.count} transaction${d.t.count == 1 ? '' : 's'}',
+            ),
+            const SizedBox(height: 12),
+
+            // 3. 2x2 Grid: Row 1 - Cash collection & Gpay/NEFT/Others
             Row(
               children: [
                 Expanded(
@@ -67,7 +74,7 @@ class _DailyMoneyScreenState extends State<DailyMoneyScreen> {
                     value: inr(d.t.cash),
                     icon: Icons.payments_outlined,
                     iconColor: const Color(0xFF10B981),
-                    iconBg: const Color(0xFFE8F5E9),
+                    iconBg: const Color(0xFFE8F8F0),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -84,14 +91,7 @@ class _DailyMoneyScreenState extends State<DailyMoneyScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 3. Full Width: Total Collection (Matching Home Page)
-            WideStatCard.totalCollection(
-              value: inr(d.t.total),
-              sub: '${d.t.count} transaction${d.t.count == 1 ? '' : 's'}',
-            ),
-            const SizedBox(height: 12),
-
-            // 4. Row of 2: Total expenses & Total remaining
+            // 4. 2x2 Grid: Row 2 - Total expenses & Total remaining
             Row(
               children: [
                 Expanded(
@@ -100,7 +100,7 @@ class _DailyMoneyScreenState extends State<DailyMoneyScreen> {
                     value: inr(d.expenses),
                     icon: Icons.confirmation_number_outlined,
                     iconColor: const Color(0xFFF43F5E),
-                    iconBg: const Color(0xFFFFE4E6),
+                    iconBg: const Color(0xFFFFEEF2),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -116,7 +116,7 @@ class _DailyMoneyScreenState extends State<DailyMoneyScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
 
             if (d.cats.isNotEmpty) ...[
               const SectionTitle('Expenses on this day'),
@@ -215,13 +215,14 @@ class _DailyMoneyScreenState extends State<DailyMoneyScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            WideStatCard(
-              label: 'Range remaining',
-              value: inr(rangeTotal - rangeExp),
-              sub: 'Total collection − Total expenses',
+            TotalCollectionCard(
+              title: 'Range remaining',
+              amount: inr(rangeTotal - rangeExp),
+              subtext: 'Total collection − Total expenses',
               icon: Icons.savings_outlined,
-              iconColor: rangeTotal - rangeExp >= 0 ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
-              iconBg: rangeTotal - rangeExp >= 0 ? const Color(0xFFE8F5E9) : const Color(0xFFFFE4E6),
+              gradientColors: rangeTotal - rangeExp >= 0
+                  ? const [Color(0xFF0284C7), Color(0xFF0EA5E9)]
+                  : const [Color(0xFFE11D48), Color(0xFFF43F5E)],
             ),
             const SizedBox(height: 16),
             GlassCard(

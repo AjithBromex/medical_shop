@@ -309,12 +309,12 @@ class _ShopsScreenState extends State<ShopsScreen> {
                 GlassButton(
                   onPressed: () => showDialog(
                     context: context,
-                    builder: (ctx) => const CloudMigrationDialog(),
+                    builder: (ctx) => const DataImportDialog(),
                   ),
-                  icon: Icons.cloud_download_outlined,
-                  accentColor: Colors.deepPurple,
+                  icon: Icons.file_upload_outlined,
+                  accentColor: const Color(0xFF0284C7),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  child: const Text('Import from MongoDB'),
+                  child: const Text('Import from file'),
                 ),
               ]),
             ),

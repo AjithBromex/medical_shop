@@ -94,7 +94,8 @@ To enable Google Sign-In and Google Drive sync, complete the following steps in 
 2. Select **Application type:** `Android`.
 3. Set **Package name:** `com.ajithbromex.medical_shop_manager`.
 4. Set **SHA-1 certificate fingerprint:**
-   `79:CE:3C:10:B4:1D:FA:32:CE:A9:04:77:0A:B9:00:E3:2B:B1:10:05`
+   `74:79:BE:B2:BE:4E:64:F3:C2:8F:1F:BB:51:2A:83:D5:71:19:70:22`
+   *(Also keep `79:CE:3C:10:B4:1D:FA:32:CE:A9:04:77:0A:B9:00:E3:2B:B1:10:05` if migrating from the legacy build)*
 
 #### B. Web (and Desktop Fallback)
 1. In **Credentials**, click **Create Credentials** > **OAuth client ID**.

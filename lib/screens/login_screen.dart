@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme.dart';
@@ -50,6 +51,8 @@ class _LoginScreenState extends State<LoginScreen> {
           errorStr.contains('access_denied') ||
           errorStr.contains('verification')) {
         _showAccessDeniedHelp();
+      } else if (errorStr.contains('10') || errorStr.contains('DEVELOPER_ERROR')) {
+        _showDeveloperErrorHelp();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -60,6 +63,210 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     }
+  }
+
+  void _showDeveloperErrorHelp() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const sha1 = '74:79:BE:B2:BE:4E:64:F3:C2:8F:1F:BB:51:2A:83:D5:71:19:70:22';
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.vpn_key_rounded, color: Color(0xFF0284C7), size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Google OAuth Setup Required',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Error 10: SHA-1 fingerprint mismatch',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? const Color(0xFF94A3B8) : AppColors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Using another Google account?',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'When your Google Cloud OAuth app is in "Testing" mode, any other Gmail address MUST be added to your project:\n'
+                    '1. Open Google Cloud Console ➔ OAuth consent screen\n'
+                    '2. Under "Test users", click "+ ADD USERS"\n'
+                    '3. Enter your second Gmail address and click Save\n'
+                    '4. Return here and tap "Sign in with Google" again',
+                    style: TextStyle(
+                      fontSize: 12.2,
+                      height: 1.4,
+                      color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Android OAuth Client Fingerprint:',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Package Name: com.ajithbromex.medical_shop_manager\n'
+                    'SHA-1 Fingerprint:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SelectableText(
+                            sha1,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.copy_rounded, size: 18),
+                          tooltip: 'Copy SHA-1',
+                          onPressed: () {
+                            Clipboard.setData(const ClipboardData(text: sha1));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('SHA-1 fingerprint copied to clipboard!'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _continueOffline();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Use Offline Mode'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _handleGoogleSignIn();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0284C7),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Retry Sign In'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _continueOffline() {
@@ -251,45 +458,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ? const Color(0x1438BDF8)
                       : const Color(0x28E0F2FE),
                 ),
-              ),
-            ),
-
-            // Top Right Dark Mode Toggle Button
-            Positioned(
-              top: 14,
-              right: 18,
-              child: Consumer<AppState>(
-                builder: (context, state, _) {
-                  return Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                      border: Border.all(
-                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                        width: 1.2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        isDark ? Icons.light_mode_rounded : Icons.nightlight_round,
-                        size: 20,
-                        color: isDark ? const Color(0xFFFBBF24) : const Color(0xFF0B2545),
-                      ),
-                      padding: EdgeInsets.zero,
-                      tooltip: isDark ? 'Switch to Light' : 'Switch to Dark',
-                      onPressed: () => state.toggleTheme(),
-                    ),
-                  );
-                },
               ),
             ),
 
@@ -1033,90 +1201,66 @@ class _GoogleGLogo extends StatelessWidget {
 class _GoogleGLogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final double r = size.width / 2;
-    final center = Offset(r, r);
-
+    // Official Google "G" logo paths mapped from 24x24 viewBox
+    final double s = size.width / 24.0;
     final paint = Paint()
       ..style = PaintingStyle.fill
       ..isAntiAlias = true;
 
-    // Blue sector (Horizontal Bar & Right arc)
+    // 1. Blue sector (Right & Horizontal bar) - #4285F4
     paint.color = const Color(0xFF4285F4);
     final bluePath = Path()
-      ..moveTo(center.dx, center.dy - r * 0.16)
-      ..lineTo(center.dx + r * 0.98, center.dy - r * 0.16)
-      ..arcTo(
-        Rect.fromCircle(center: center, radius: r),
-        0.0,
-        0.9,
-        false,
-      )
-      ..lineTo(center.dx + r * 0.45, center.dy + r * 0.45)
-      ..arcTo(
-        Rect.fromCircle(center: center, radius: r * 0.55),
-        0.9,
-        -0.9,
-        false,
-      )
-      ..lineTo(center.dx, center.dy + r * 0.16)
+      ..moveTo(22.56 * s, 12.25 * s)
+      ..cubicTo(22.56 * s, 11.47 * s, 22.49 * s, 10.72 * s, 22.36 * s, 10.0 * s)
+      ..lineTo(12.0 * s, 10.0 * s)
+      ..lineTo(12.0 * s, 14.26 * s)
+      ..lineTo(17.92 * s, 14.26 * s)
+      ..cubicTo(17.66 * s, 15.63 * s, 16.88 * s, 16.79 * s, 15.71 * s, 17.57 * s)
+      ..lineTo(15.71 * s, 20.34 * s)
+      ..lineTo(19.28 * s, 20.34 * s)
+      ..cubicTo(21.36 * s, 18.42 * s, 22.56 * s, 15.60 * s, 22.56 * s, 12.25 * s)
       ..close();
     canvas.drawPath(bluePath, paint);
 
-    // Green sector (Bottom)
+    // 2. Green sector (Bottom arc) - #34A853
     paint.color = const Color(0xFF34A853);
     final greenPath = Path()
-      ..arcTo(
-        Rect.fromCircle(center: center, radius: r),
-        0.9,
-        1.3,
-        false,
-      )
-      ..lineTo(
-        center.dx + r * 0.55 * (0.9 + 1.3),
-        center.dy + r * 0.55,
-      )
-      ..arcTo(
-        Rect.fromCircle(center: center, radius: r * 0.55),
-        0.9 + 1.3,
-        -1.3,
-        false,
-      )
+      ..moveTo(12.0 * s, 23.0 * s)
+      ..cubicTo(14.97 * s, 23.0 * s, 17.46 * s, 22.02 * s, 19.28 * s, 20.34 * s)
+      ..lineTo(15.71 * s, 17.57 * s)
+      ..cubicTo(14.73 * s, 18.23 * s, 13.48 * s, 18.63 * s, 12.0 * s, 18.63 * s)
+      ..cubicTo(9.14 * s, 18.63 * s, 6.71 * s, 16.70 * s, 5.84 * s, 14.10 * s)
+      ..lineTo(2.18 * s, 14.10 * s)
+      ..lineTo(2.18 * s, 16.94 * s)
+      ..cubicTo(3.99 * s, 20.53 * s, 7.70 * s, 23.0 * s, 12.0 * s, 23.0 * s)
       ..close();
     canvas.drawPath(greenPath, paint);
 
-    // Yellow sector (Left)
+    // 3. Yellow sector (Left arc) - #FBBC05
     paint.color = const Color(0xFFFBBC05);
     final yellowPath = Path()
-      ..arcTo(
-        Rect.fromCircle(center: center, radius: r),
-        2.2,
-        1.1,
-        false,
-      )
-      ..arcTo(
-        Rect.fromCircle(center: center, radius: r * 0.55),
-        3.3,
-        -1.1,
-        false,
-      )
+      ..moveTo(5.84 * s, 14.09 * s)
+      ..cubicTo(5.62 * s, 13.43 * s, 5.49 * s, 12.73 * s, 5.49 * s, 12.0 * s)
+      ..cubicTo(5.49 * s, 11.27 * s, 5.62 * s, 10.57 * s, 5.84 * s, 9.91 * s)
+      ..lineTo(5.84 * s, 7.06 * s)
+      ..lineTo(2.18 * s, 7.06 * s)
+      ..cubicTo(1.43 * s, 8.55 * s, 1.0 * s, 10.22 * s, 1.0 * s, 12.0 * s)
+      ..cubicTo(1.0 * s, 13.78 * s, 1.43 * s, 15.45 * s, 2.18 * s, 16.94 * s)
+      ..lineTo(5.03 * s, 14.72 * s)
+      ..lineTo(5.84 * s, 14.09 * s)
       ..close();
     canvas.drawPath(yellowPath, paint);
 
-    // Red sector (Top)
+    // 4. Red sector (Top arc) - #EA4335
     paint.color = const Color(0xFFEA4335);
     final redPath = Path()
-      ..arcTo(
-        Rect.fromCircle(center: center, radius: r),
-        3.3,
-        1.7,
-        false,
-      )
-      ..arcTo(
-        Rect.fromCircle(center: center, radius: r * 0.55),
-        5.0,
-        -1.7,
-        false,
-      )
+      ..moveTo(12.0 * s, 5.38 * s)
+      ..cubicTo(13.62 * s, 5.38 * s, 15.06 * s, 5.94 * s, 16.21 * s, 7.02 * s)
+      ..lineTo(19.36 * s, 3.87 * s)
+      ..cubicTo(17.45 * s, 2.09 * s, 14.97 * s, 1.0 * s, 12.0 * s, 1.0 * s)
+      ..cubicTo(7.70 * s, 1.0 * s, 3.99 * s, 3.47 * s, 2.18 * s, 7.06 * s)
+      ..lineTo(5.84 * s, 9.90 * s)
+      ..cubicTo(6.71 * s, 7.30 * s, 9.14 * s, 5.38 * s, 12.0 * s, 5.38 * s)
       ..close();
     canvas.drawPath(redPath, paint);
   }

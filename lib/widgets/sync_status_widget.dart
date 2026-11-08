@@ -23,33 +23,33 @@ class SyncStatusHeaderButton extends StatelessWidget {
     Color color;
 
     if (!state.isSignedIn) {
-      icon = const Icon(Icons.account_circle_outlined, size: 19, color: AppColors.textSecondary);
-      label = 'Sign In';
-      color = AppColors.textSecondary;
+      icon = const Icon(Icons.cloud_done_rounded, size: 22, color: Color(0xFF0284C7));
+      label = 'Cloud Sync / Backup';
+      color = const Color(0xFF0284C7);
     } else if (state.isSyncing) {
       icon = const SizedBox(
-        width: 16,
-        height: 16,
-        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.total),
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0284C7)),
       );
       label = 'Syncing...';
-      color = AppColors.total;
+      color = const Color(0xFF0284C7);
     } else if (state.pendingSyncCount > 0) {
       icon = Badge(
         label: Text('${state.pendingSyncCount}'),
         backgroundColor: Colors.amber.shade800,
-        child: const Icon(Icons.cloud_upload_outlined, size: 19, color: Colors.amber),
+        child: const Icon(Icons.cloud_upload_rounded, size: 22, color: Colors.amber),
       );
       label = '${state.pendingSyncCount} waiting to sync';
       color = Colors.amber.shade800;
     } else if (!state.isOnline) {
-      icon = const Icon(Icons.cloud_off_outlined, size: 19, color: AppColors.textSecondary);
+      icon = const Icon(Icons.cloud_off_rounded, size: 22, color: AppColors.textSecondary);
       label = 'Offline';
       color = AppColors.textSecondary;
     } else {
-      icon = const Icon(Icons.cloud_done_rounded, size: 19, color: AppColors.gpay);
+      icon = const Icon(Icons.cloud_done_rounded, size: 22, color: Color(0xFF0284C7));
       label = 'Drive Backed Up';
-      color = AppColors.gpay;
+      color = const Color(0xFF0284C7);
     }
 
     if (compact) {
@@ -234,15 +234,7 @@ void showCloudSyncSheet(BuildContext context) {
                         if (val == 'switch') {
                           await _showSignInOrSwitchDialog(ctx, isSwitch: true);
                         } else if (val == 'signout') {
-                          await state.signOut();
-                          if (ctx.mounted) {
-                            Navigator.pop(ctx);
-                            toast(ctx, 'Signed out of Google Drive.');
-                            Navigator.of(ctx, rootNavigator: true).pushAndRemoveUntil(
-                              MaterialPageRoute(builder: (_) => const LoginScreen()),
-                              (route) => false,
-                            );
-                          }
+                          await _handleLogout(ctx, state);
                         }
                       },
                       itemBuilder: (c) => [
@@ -401,7 +393,7 @@ void showCloudSyncSheet(BuildContext context) {
             ),
             const SizedBox(height: 18),
 
-            if (state.isSignedIn)
+            if (state.isSignedIn) ...[
               SizedBox(
                 width: double.infinity,
                 child: GlassButton(
@@ -428,11 +420,99 @@ void showCloudSyncSheet(BuildContext context) {
                   ),
                 ),
               ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _handleLogout(ctx, state),
+                  icon: const Icon(Icons.logout_rounded, size: 18, color: Color(0xFFEF4444)),
+                  label: const Text(
+                    'Log Out',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: Color(0xFFEF4444),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: BorderSide(
+                      color: const Color(0xFFEF4444).withValues(alpha: isDark ? 0.45 : 0.35),
+                      width: 1.2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            ] else ...[
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.of(ctx, rootNavigator: true).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                  label: const Text(
+                    'Return to Login Screen',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       );
     },
   );
+}
+
+Future<void> _handleLogout(BuildContext context, AppState state) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (c) => AlertDialog(
+      title: const Text('Log out?'),
+      content: const Text(
+        'Are you sure you want to log out of Google Drive? You will be redirected to the sign-in screen.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(c, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+          onPressed: () => Navigator.pop(c, true),
+          child: const Text('Log out'),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed == true) {
+    await state.signOut();
+    if (context.mounted) {
+      Navigator.pop(context); // close sheet
+      toast(context, 'Logged out of Google Drive.');
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
 }
 
 Future<void> _showSignInOrSwitchDialog(BuildContext context, {required bool isSwitch}) async {

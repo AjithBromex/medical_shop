@@ -195,7 +195,7 @@ class ShellState extends State<Shell> {
                     )
                   : Builder(
                       builder: (c) => IconButton(
-                        icon: Icon(Icons.menu_rounded, size: 24, color: isDark ? Colors.white : AppColors.textPrimary),
+                        icon: Icon(Icons.menu, size: 24, color: isDark ? Colors.white : const Color(0xFF0F172A)),
                         tooltip: 'Open menu',
                         onPressed: () => Scaffold.of(c).openDrawer(),
                       ),
@@ -220,7 +220,7 @@ class ShellState extends State<Shell> {
                             ),
                             child: Image.asset('assets/home_logo.png', height: 26, fit: BoxFit.contain, key: const ValueKey('home_logo_dark')),
                           )
-                        : Image.asset('assets/home_logo.png', height: 32, fit: BoxFit.contain, key: const ValueKey('home_logo')))
+                        : Image.asset('assets/home_logo.png', height: 28, fit: BoxFit.contain, key: const ValueKey('home_logo')))
                     : Text(
                         dest.label,
                         key: ValueKey(dest.label),
@@ -230,10 +230,11 @@ class ShellState extends State<Shell> {
               actions: const [
                 ThemeModeSwitcher(compact: true),
                 SyncStatusHeaderButton(compact: true),
+                SizedBox(width: 4),
               ],
               backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
               elevation: 0,
-              shape: Border(bottom: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))),
+              shape: Border(bottom: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9), width: 1)),
             ),
       drawer: wide
           ? null
@@ -557,11 +558,15 @@ class _CenterAddButton extends StatelessWidget {
                       width: 54,
                       height: 54,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0284C7),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF0284C7), Color(0xFF0EA5E9)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF0284C7).withValues(alpha: 0.42),
+                            color: const Color(0xFF0284C7).withValues(alpha: 0.45),
                             blurRadius: 14,
                             offset: const Offset(0, 4),
                           ),

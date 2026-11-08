@@ -284,8 +284,8 @@ $qWhere GROUP BY s.id ORDER BY s.shop_name COLLATE NOCASE''', q == null || q.isE
     final w = <String>['c.deleted = 0'];
     final a = <Object?>[];
     if (f.q != null && f.q!.isNotEmpty) {
-      w.add("(c.receipt_number LIKE ? ESCAPE '\\' OR s.shop_name LIKE ? ESCAPE '\\')");
-      a..add('%${_esc(f.q!)}%')..add('%${_esc(f.q!)}%');
+      w.add("(c.receipt_number LIKE ? ESCAPE '\\' OR s.shop_name LIKE ? ESCAPE '\\' OR c.notes LIKE ? ESCAPE '\\')");
+      a..add('%${_esc(f.q!)}%')..add('%${_esc(f.q!)}%')..add('%${_esc(f.q!)}%');
     }
     if (f.dateFrom != null) {
       w.add('c.collection_date >= ?');
@@ -803,6 +803,23 @@ FROM collections c JOIN medical_shops s ON s.id = c.medical_shop_id ${cw.where} 
                   (c.notes == null || c.notes!.isEmpty) ? '-' : c.notes,
                 ])
             .toList();
+      case 'collection_notes':
+        headers = ['#', 'Receipt No.', 'Date', 'Customer', 'Cash', 'Gpay/NEFT/Others', 'Total', 'Notes'];
+        var idx = 1;
+        final allNotes = await collections(f, oldestFirst: true);
+        rows = allNotes
+            .where((c) => c.notes != null && c.notes!.trim().isNotEmpty && c.notes!.trim() != '-')
+            .map((c) => <Object?>[
+                  idx++,
+                  c.receiptNumber.replaceFirst(RegExp(r'^#'), ''),
+                  c.date,
+                  c.shopName,
+                  Money(c.cash),
+                  Money(c.gpay + c.cheque),
+                  Money(c.total),
+                  c.notes!.trim(),
+                ])
+            .toList();
       case 'daily_collection':
         headers = ['Date', 'Transactions', 'Cash', 'Gpay/NEFT/Others', 'Total'];
         rows = (await periodBreakdown('daily', from: df, to: dt, shopId: shopId, newestFirst: false))
@@ -858,6 +875,7 @@ const reportTitles = {
   'daily_collection': 'Daily Collection Report',
   'shop_wise': 'Shop-wise Collection Report',
   'date_range': 'Date-range Collection Report',
+  'collection_notes': 'Notes Report',
   'expenses': 'Expense Report',
   'daily_balance': 'Daily Money Balance Report',
   'payment_method': 'Payment-method Report',

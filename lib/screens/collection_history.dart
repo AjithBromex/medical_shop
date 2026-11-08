@@ -24,8 +24,9 @@ class CollectionHistory extends StatefulWidget {
 class _H {
   final List<Collection> rows;
   final Totals totals;
+  final int expenses;
   final List<MedicalShop> shops;
-  _H(this.rows, this.totals, this.shops);
+  _H(this.rows, this.totals, this.expenses, this.shops);
 }
 
 class _CollectionHistoryState extends State<CollectionHistory> {
@@ -35,9 +36,15 @@ class _CollectionHistoryState extends State<CollectionHistory> {
   Future<_H> _load() async {
     final r = Repository.instance;
     final totals = await r.totalsFor(_f);
+    final expenses = await r.expenseTotal(_f.dateFrom, _f.dateTo);
     final pages = (totals.count / pageSize).ceil().clamp(1, 1 << 30);
     if (_page > pages) _page = pages;
-    return _H(await r.collections(_f, limit: pageSize, offset: (_page - 1) * pageSize), totals, await r.shops());
+    return _H(
+      await r.collections(_f, limit: pageSize, offset: (_page - 1) * pageSize),
+      totals,
+      expenses,
+      await r.shops(),
+    );
   }
 
   @override
@@ -48,6 +55,7 @@ class _CollectionHistoryState extends State<CollectionHistory> {
         deps: (_f.q, _f.dateFrom, _f.dateTo, _f.shopId, _f.method, _page),
         builder: (context, h) {
           final pages = (h.totals.count / pageSize).ceil().clamp(1, 1 << 30);
+          final remCash = h.totals.cash - h.expenses;
           return PageBody([
             FilterBar(
               value: _f,
@@ -64,11 +72,14 @@ class _CollectionHistoryState extends State<CollectionHistory> {
               children: [
                 Expanded(
                   child: MiniStatCard(
-                    label: 'Cash collection',
-                    value: inr(h.totals.cash),
+                    label: 'Remaining cash',
+                    value: inr(remCash),
+                    sub: h.expenses > 0
+                        ? 'Cash (${inr(h.totals.cash)}) − Exp (${inr(h.expenses)})'
+                        : 'Cash collection',
                     icon: Icons.payments_outlined,
                     iconColor: const Color(0xFF10B981),
-                    iconBg: const Color(0xFFE8F5E9),
+                    iconBg: const Color(0xFFE8F8F0),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -84,9 +95,9 @@ class _CollectionHistoryState extends State<CollectionHistory> {
               ],
             ),
             const SizedBox(height: 12),
-            WideStatCard.totalCollection(
-              value: inr(h.totals.total),
-              sub: '${h.totals.count} record${h.totals.count == 1 ? '' : 's'} found',
+            TotalCollectionCard(
+              amount: inr(h.totals.total),
+              subtext: '${h.totals.count} record${h.totals.count == 1 ? '' : 's'} found',
             ),
             const SizedBox(height: 16),
 
@@ -218,16 +229,16 @@ class _CollectionHistoryState extends State<CollectionHistory> {
                                           ),
                                       ],
                                     ),
-                                    if (h.rows[i].notes != null && h.rows[i].notes!.isNotEmpty) ...[
+                                    if (h.rows[i].notes != null && h.rows[i].notes!.trim().isNotEmpty && h.rows[i].notes!.trim() != '-') ...[
                                       const SizedBox(height: 4),
                                       Text(
                                         h.rows[i].notes!,
-                                        style: TextStyle(
-                                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                                          fontSize: 11.5,
-                                          fontStyle: FontStyle.italic,
+                                        style: const TextStyle(
+                                          color: Color(0xFFDC2626),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
                                         ),
-                                        maxLines: 1,
+                                        maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ],

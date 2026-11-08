@@ -284,7 +284,42 @@ CREATE TABLE sync_queue (
     final safety = await backup();
     await close();
     await backupFile.copy(await dbPath);
-    await db; // reopen
+    await db; // reopen and run any pending migrations
     return safety;
+  }
+
+  /// Replaces the active account database with [backupFile], ensures schema version 3,
+  /// updates all active records with current timestamp, and prepares them for Google Drive sync.
+  Future<Map<String, int>> restoreAccountFromBackup(File backupFile) async {
+    await restore(backupFile);
+    final d = await db;
+    final nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
+
+    // Ensure all active records are marked pending with fresh timestamp so Drive sync treats them as newest
+    try {
+      await d.execute("UPDATE medical_shops SET updated_at_ms = $nowMs, sync_status = 'pending' WHERE deleted = 0");
+    } catch (_) {}
+    try {
+      await d.execute("UPDATE collections SET updated_at_ms = $nowMs, sync_status = 'pending' WHERE deleted = 0");
+    } catch (_) {}
+    try {
+      await d.execute("UPDATE expenses SET updated_at_ms = $nowMs, sync_status = 'pending' WHERE deleted = 0");
+    } catch (_) {}
+    try {
+      await d.execute("UPDATE expense_categories SET updated_at_ms = $nowMs WHERE deleted = 0");
+    } catch (_) {}
+
+    int firstInt(List<Map<String, Object?>> rows) =>
+        rows.isEmpty || rows.first.values.isEmpty ? 0 : ((rows.first.values.first as num?)?.toInt() ?? 0);
+
+    final sCount = firstInt(await d.rawQuery('SELECT COUNT(*) FROM medical_shops WHERE deleted = 0'));
+    final cCount = firstInt(await d.rawQuery('SELECT COUNT(*) FROM collections WHERE deleted = 0'));
+    final eCount = firstInt(await d.rawQuery('SELECT COUNT(*) FROM expenses WHERE deleted = 0'));
+
+    return {
+      'shops': sCount,
+      'collections': cCount,
+      'expenses': eCount,
+    };
   }
 }

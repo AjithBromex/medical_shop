@@ -30,11 +30,6 @@ const _reportClockBadgeSvg = '''<svg viewBox="0 0 24 24" width="22" height="22">
   <polyline points="17 14.5 17 17 18.5 17" fill="none" stroke="#0284C7" stroke-width="1.5" stroke-linecap="round"/>
 </svg>''';
 
-const _reportCashCardSvg = '''<svg viewBox="0 0 28 28" width="28" height="28" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <rect x="5" y="6" width="19" height="15" rx="3"/>
-  <path d="M3 17V8a3 3 0 0 1 3-3h14"/>
-  <path d="M14.5 10v7M12.5 11.5a1.8 1.8 0 0 1 3.5 0c0 1.6-3.5 1.6-3.5 3.2a1.8 1.8 0 0 0 3.5 0"/>
-</svg>''';
 
 const _reportExpenseCardSvg = '''<svg viewBox="0 0 28 28" width="28" height="28">
   <path d="M6 3h16v22l-2.5-1.5L17 25l-3-1.5L11 25l-2.5-1.5L6 25V3z" fill="none" stroke="#DC2626" stroke-width="2" stroke-linejoin="round"/>
@@ -49,6 +44,21 @@ const _reportWalletCardSvg = '''<svg viewBox="0 0 28 28" width="28" height="28">
   <path d="M4 8a3 3 0 0 1 3-3h15a2 2 0 0 1 2 2v2H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h15a2 2 0 0 0 2-2V11" fill="none" stroke="#0A2540" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M17 13h7v6h-7a3 3 0 0 1 0-6z" fill="none" stroke="#0A2540" stroke-width="2"/>
   <circle cx="21" cy="16" r="1" fill="#0A2540"/>
+</svg>''';
+
+const _reportTotalCardSvg = '''<svg viewBox="0 0 28 28" width="28" height="28" fill="none" stroke="#007A78" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="14" cy="14" r="10"/>
+  <path d="M14 9v10M11.5 11.5a2 2 0 0 1 4 0c0 2-4 2-4 4a2 2 0 0 0 4 0"/>
+</svg>''';
+
+const _reportBankCardSvg = '''<svg viewBox="0 0 28 28" width="28" height="28" fill="none" stroke="#0284C7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 10L14 3l11 7v2H3v-2z"/>
+  <line x1="6" y1="12" x2="6" y2="21"/>
+  <line x1="11" y1="12" x2="11" y2="21"/>
+  <line x1="17" y1="12" x2="17" y2="21"/>
+  <line x1="22" y1="12" x2="22" y2="21"/>
+  <line x1="2" y1="21" x2="26" y2="21"/>
+  <line x1="1" y1="24" x2="27" y2="24"/>
 </svg>''';
 
 /// Builds the CSV for a report using the same filters as the screen and opens the share sheet.
@@ -102,7 +112,7 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f, {int? expen
   }
   final dateRangeStr = '${dmy(minD ?? now)} to ${dmy(maxD ?? now)}';
 
-  final isDateRange = report.kind == 'date_range';
+  final isDateRange = report.kind == 'date_range' || report.kind == 'collection_notes';
 
   final headers = [
     for (final h in report.headers)
@@ -131,23 +141,24 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f, {int? expen
 
   // Compute summary totals for date_range
   int totalCashPaise = 0;
+  int totalOnlinePaise = 0;
+  int totalCollectionPaise = 0;
   if (isDateRange) {
-    if (footer != null && footer.length > 4) {
-      final cashVal = footer[4];
+    if (footer != null && footer.length > 6) {
       try {
-        totalCashPaise = parseAmount(cashVal, 'Cash', allowZero: true);
+        totalCashPaise = parseAmount(footer[4], 'Cash', allowZero: true);
+        totalOnlinePaise = parseAmount(footer[5], 'Online', allowZero: true);
+        totalCollectionPaise = parseAmount(footer[6], 'Total', allowZero: true);
       } catch (_) {}
     } else {
       for (final r in report.rows) {
-        if (r.length > 4) {
+        if (r.length > 6) {
           final c = r[4];
-          if (c is Money) {
-            totalCashPaise += c.paise;
-          } else {
-            try {
-              totalCashPaise += parseAmount(Report.cell(c), 'Cash', allowZero: true);
-            } catch (_) {}
-          }
+          final o = r[5];
+          final t = r[6];
+          if (c is Money) totalCashPaise += c.paise;
+          if (o is Money) totalOnlinePaise += o.paise;
+          if (t is Money) totalCollectionPaise += t.paise;
         }
       }
     }
@@ -156,12 +167,11 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f, {int? expen
   int expensePaise = expenseTotal ?? 0;
   if (expenseTotal == null && isDateRange) {
     try {
-      expensePaise = await Repository.instance.expenseTotal(f.dateFrom ?? minD, f.dateTo ?? maxD);
+      expensePaise = await Repository.instance.expenseTotal(f.dateFrom, f.dateTo);
     } catch (_) {
       expensePaise = 0;
     }
   }
-  final remainingCashPaise = totalCashPaise - expensePaise;
 
   final columnWidths = isDateRange
       ? const <int, pw.TableColumnWidth>{
@@ -326,7 +336,7 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f, {int? expen
                     return pw.TextStyle(font: bold, fontSize: 11, color: PdfColor.fromHex('047857'));
                   }
                   if (col == 7) {
-                    return pw.TextStyle(font: bold, fontSize: 12, color: PdfColor.fromHex('EF4444'));
+                    return pw.TextStyle(font: font, fontSize: 10.5, color: PdfColor.fromHex('64748B'));
                   }
                   return pw.TextStyle(font: bold, fontSize: 10.5, color: PdfColor.fromHex('0A1931'));
                 }
@@ -335,9 +345,9 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f, {int? expen
                   if (col == 7) {
                     final text = cellData?.toString().trim() ?? '';
                     if (text == '-' || text.isEmpty) {
-                      return pw.TextStyle(font: bold, fontSize: 12, color: PdfColor.fromHex('EF4444'));
+                      return pw.TextStyle(font: font, fontSize: 10, color: PdfColor.fromHex('64748B'));
                     }
-                    return pw.TextStyle(font: bold, fontSize: 9.5, color: PdfColor.fromHex('DC2626'));
+                    return pw.TextStyle(font: bold, fontSize: 10, color: PdfColor.fromHex('DC2626'));
                   }
                   if (col == 6) { // Total column
                     return pw.TextStyle(font: bold, fontSize: 11.5, color: PdfColor.fromHex('0A1931'));
@@ -346,6 +356,13 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f, {int? expen
                     return pw.TextStyle(font: bold, fontSize: 10, color: PdfColor.fromHex('0A1931'));
                   }
                   return pw.TextStyle(font: bold, fontSize: 11, color: PdfColor.fromHex('0A1931'));
+                }
+                if (col < report.headers.length && report.headers[col] == 'Notes') {
+                  final text = cellData?.toString().trim() ?? '';
+                  if (text == '-' || text.isEmpty) {
+                    return pw.TextStyle(font: font, fontSize: 10, color: PdfColor.fromHex('64748B'));
+                  }
+                  return pw.TextStyle(font: bold, fontSize: 10, color: PdfColor.fromHex('DC2626'));
                 }
                 return pw.TextStyle(font: bold, fontSize: 11, color: PdfColor.fromHex('0A1931'));
               },
@@ -359,41 +376,42 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f, {int? expen
           ),
         ),
         if (isDateRange) ...[
-          pw.SizedBox(height: 20),
+          pw.SizedBox(height: 18),
+          // Row 1: Total Cash Collected & Gpay/NEFT/Others
           pw.Row(
             children: [
-              // 1. Total Cash Card
+              // Total Cash Collected
               pw.Expanded(
                 child: pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: pw.BoxDecoration(
-                    color: PdfColor.fromHex('F0FDF9'),
-                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
+                    color: PdfColor.fromHex('F0FDF4'),
+                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
                   ),
                   child: pw.Row(
                     children: [
                       pw.Container(
-                        width: 44,
-                        height: 44,
+                        width: 40,
+                        height: 40,
                         decoration: pw.BoxDecoration(
-                          color: PdfColor.fromHex('D1FAE5'),
-                          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+                          color: PdfColor.fromHex('DCFCE7'),
+                          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
                         ),
                         alignment: pw.Alignment.center,
-                        child: pw.SvgImage(svg: _reportCashCardSvg, width: 26, height: 26),
+                        child: pw.SvgImage(svg: _reportWalletCardSvg, width: 22, height: 22),
                       ),
-                      pw.SizedBox(width: 12),
+                      pw.SizedBox(width: 10),
                       pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
                           pw.Text(
-                            'Total Cash',
-                            style: pw.TextStyle(font: font, fontSize: 11, color: PdfColor.fromHex('0F172A')),
+                            'Total Cash Collected',
+                            style: pw.TextStyle(font: font, fontSize: 9.5, color: PdfColor.fromHex('64748B')),
                           ),
-                          pw.SizedBox(height: 4),
+                          pw.SizedBox(height: 2),
                           pw.Text(
                             inr(totalCashPaise),
-                            style: pw.TextStyle(font: bold, fontSize: 19, color: PdfColor.fromHex('0D9488')),
+                            style: pw.TextStyle(font: bold, fontSize: 16, color: PdfColor.fromHex('0A2540')),
                           ),
                         ],
                       ),
@@ -401,81 +419,39 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f, {int? expen
                   ),
                 ),
               ),
-              pw.SizedBox(width: 14),
-
-              // 2. Expense Card
+              pw.SizedBox(width: 12),
+              // Gpay/NEFT/Others
               pw.Expanded(
                 child: pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: pw.BoxDecoration(
-                    color: PdfColor.fromHex('FFF5F5'),
-                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
+                    color: PdfColor.fromHex('F0F9FF'),
+                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
                   ),
                   child: pw.Row(
                     children: [
                       pw.Container(
-                        width: 44,
-                        height: 44,
+                        width: 40,
+                        height: 40,
                         decoration: pw.BoxDecoration(
-                          color: PdfColor.fromHex('FEE2E2'),
-                          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+                          color: PdfColor.fromHex('E0F2FE'),
+                          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
                         ),
                         alignment: pw.Alignment.center,
-                        child: pw.SvgImage(svg: _reportExpenseCardSvg, width: 26, height: 26),
+                        child: pw.SvgImage(svg: _reportBankCardSvg, width: 22, height: 22),
                       ),
-                      pw.SizedBox(width: 12),
+                      pw.SizedBox(width: 10),
                       pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
                           pw.Text(
-                            'Expense',
-                            style: pw.TextStyle(font: font, fontSize: 11, color: PdfColor.fromHex('0F172A')),
+                            'Gpay/NEFT/Others',
+                            style: pw.TextStyle(font: font, fontSize: 9.5, color: PdfColor.fromHex('64748B')),
                           ),
-                          pw.SizedBox(height: 4),
+                          pw.SizedBox(height: 2),
                           pw.Text(
-                            inr(expensePaise),
-                            style: pw.TextStyle(font: bold, fontSize: 19, color: PdfColor.fromHex('DC2626')),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 14),
-
-              // 3. Remaining Cash Card
-              pw.Expanded(
-                child: pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColor.fromHex('EFF6FF'),
-                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
-                  ),
-                  child: pw.Row(
-                    children: [
-                      pw.Container(
-                        width: 44,
-                        height: 44,
-                        decoration: pw.BoxDecoration(
-                          color: PdfColor.fromHex('DBEAFE'),
-                          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-                        ),
-                        alignment: pw.Alignment.center,
-                        child: pw.SvgImage(svg: _reportWalletCardSvg, width: 26, height: 26),
-                      ),
-                      pw.SizedBox(width: 12),
-                      pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text(
-                            'Remaining Cash',
-                            style: pw.TextStyle(font: font, fontSize: 11, color: PdfColor.fromHex('0F172A')),
-                          ),
-                          pw.SizedBox(height: 4),
-                          pw.Text(
-                            inr(remainingCashPaise),
-                            style: pw.TextStyle(font: bold, fontSize: 19, color: PdfColor.fromHex('0A2540')),
+                            inr(totalOnlinePaise),
+                            style: pw.TextStyle(font: bold, fontSize: 16, color: PdfColor.fromHex('0284C7')),
                           ),
                         ],
                       ),
@@ -484,6 +460,51 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f, {int? expen
                 ),
               ),
             ],
+          ),
+          pw.SizedBox(height: 10),
+          // Row 2: Total Collection (Full width)
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: pw.BoxDecoration(
+              color: PdfColor.fromHex('F0FDF9'),
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+              border: pw.Border.all(color: PdfColor.fromHex('A7F3D0'), width: 1),
+            ),
+            child: pw.Row(
+              children: [
+                pw.Container(
+                  width: 40,
+                  height: 40,
+                  decoration: pw.BoxDecoration(
+                    color: PdfColor.fromHex('D1FAE5'),
+                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+                  ),
+                  alignment: pw.Alignment.center,
+                  child: pw.SvgImage(svg: _reportTotalCardSvg, width: 22, height: 22),
+                ),
+                pw.SizedBox(width: 12),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'Total Collection',
+                      style: pw.TextStyle(font: font, fontSize: 10, color: PdfColor.fromHex('64748B')),
+                    ),
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      inr(totalCollectionPaise),
+                      style: pw.TextStyle(font: bold, fontSize: 17, color: PdfColor.fromHex('0D9488')),
+                    ),
+                    pw.SizedBox(height: 1),
+                    pw.Text(
+                      '${report.rows.length} record${report.rows.length == 1 ? '' : 's'} found',
+                      style: pw.TextStyle(font: font, fontSize: 8.5, color: PdfColor.fromHex('059669')),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ],
@@ -498,19 +519,9 @@ Future<void> exportReportPdf(BuildContext context, String kind, Filters f) async
   try {
     final report = await Repository.instance.buildReport(kind, f);
     int? expenseTotal;
-    if (kind == 'date_range') {
-      DateTime? minD = f.dateFrom;
-      DateTime? maxD = f.dateTo;
-      for (final r in report.rows) {
-        for (final v in r) {
-          if (v is DateTime) {
-            minD = (minD == null || v.isBefore(minD)) ? v : minD;
-            maxD = (maxD == null || v.isAfter(maxD)) ? v : maxD;
-          }
-        }
-      }
+    if (kind == 'date_range' || kind == 'collection_notes') {
       try {
-        expenseTotal = await Repository.instance.expenseTotal(minD, maxD);
+        expenseTotal = await Repository.instance.expenseTotal(f.dateFrom, f.dateTo);
       } catch (_) {}
     }
     final doc = await buildReportPdfDocument(report, f, expenseTotal: expenseTotal);
@@ -533,19 +544,9 @@ Future<void> printReportPdf(BuildContext context, String kind, Filters f) async 
   try {
     final report = await Repository.instance.buildReport(kind, f);
     int? expenseTotal;
-    if (kind == 'date_range') {
-      DateTime? minD = f.dateFrom;
-      DateTime? maxD = f.dateTo;
-      for (final r in report.rows) {
-        for (final v in r) {
-          if (v is DateTime) {
-            minD = (minD == null || v.isBefore(minD)) ? v : minD;
-            maxD = (maxD == null || v.isAfter(maxD)) ? v : maxD;
-          }
-        }
-      }
+    if (kind == 'date_range' || kind == 'collection_notes') {
       try {
-        expenseTotal = await Repository.instance.expenseTotal(minD, maxD);
+        expenseTotal = await Repository.instance.expenseTotal(f.dateFrom, f.dateTo);
       } catch (_) {}
     }
     final doc = await buildReportPdfDocument(report, f, expenseTotal: expenseTotal);

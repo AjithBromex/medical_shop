@@ -12,8 +12,9 @@ class _R {
   final List<MedicalShop> shops;
   final List<String> categories;
   final Report? report;
+  final Totals? totals;
   final int expenseTotal;
-  _R(this.shops, this.categories, this.report, {this.expenseTotal = 0});
+  _R(this.shops, this.categories, this.report, {this.totals, this.expenseTotal = 0});
 }
 
 /// On-screen reports + CSV export. Both use the same filters.
@@ -30,26 +31,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Future<_R> _load() async {
     final r = Repository.instance;
     Report? report;
+    Totals? totals;
     int expTotal = 0;
     if (_kind != null) {
       report = await r.buildReport(_kind!, _f);
-      if (_kind == 'date_range' && report.rows.isNotEmpty) {
-        DateTime? minD = _f.dateFrom;
-        DateTime? maxD = _f.dateTo;
+      if (_kind == 'collection_notes') {
+        int c = 0, g = 0;
         for (final row in report.rows) {
-          for (final v in row) {
-            if (v is DateTime) {
-              minD = (minD == null || v.isBefore(minD)) ? v : minD;
-              maxD = (maxD == null || v.isAfter(maxD)) ? v : maxD;
-            }
+          if (row.length > 5) {
+            if (row[4] is Money) c += (row[4] as Money).paise;
+            if (row[5] is Money) g += (row[5] as Money).paise;
           }
         }
-        try {
-          expTotal = await r.expenseTotal(minD, maxD);
-        } catch (_) {}
+        totals = Totals(c, g, 0, report.rows.length);
+        expTotal = await r.expenseTotal(_f.dateFrom, _f.dateTo);
+      } else if (_kind != 'expenses') {
+        totals = await r.totalsFor(_f);
+        expTotal = await r.expenseTotal(_f.dateFrom, _f.dateTo);
+      } else {
+        expTotal = await r.expenseTotal(_f.dateFrom, _f.dateTo, _f.category);
       }
     }
-    return _R(await r.shops(), await r.categoryNames(), report, expenseTotal: expTotal);
+    return _R(await r.shops(), await r.categoryNames(), report, totals: totals, expenseTotal: expTotal);
   }
 
   @override
@@ -79,9 +82,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 value: _f,
                 shops: d.shops,
                 categories: d.categories,
-                showSearch: _kind == 'date_range' || isExpense,
+                showSearch: _kind == 'date_range' || _kind == 'collection_notes' || isExpense,
                 showShop: isCollection,
-                showMethod: _kind == 'date_range',
+                showMethod: _kind == 'date_range' || _kind == 'collection_notes',
                 showCategory: isExpense,
                 onChanged: (f) => setState(() => _f = f),
               ),
@@ -127,58 +130,45 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ),
                 ],
               ),
-              if (_kind == 'date_range' && d.report!.rows.isNotEmpty) ...[
-                Builder(builder: (context) {
-                  int totalCashPaise = 0;
-                  if (d.report!.footer != null && d.report!.footer!.length > 4) {
-                    final c = d.report!.footer![4];
-                    if (c is Money) {
-                      totalCashPaise = c.paise;
-                    } else {
-                      try {
-                        totalCashPaise = parseAmount(Report.cell(c), 'Cash', allowZero: true);
-                      } catch (_) {}
-                    }
-                  }
-                  return Column(
-                    children: [
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: MiniStatCard(
-                              label: 'Total Cash',
-                              value: inr(totalCashPaise),
-                              icon: Icons.payments_outlined,
-                              iconColor: const Color(0xFF0D9488),
-                              iconBg: const Color(0xFFD1FAE5),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: MiniStatCard(
-                              label: 'Expense',
-                              value: inr(d.expenseTotal),
-                              icon: Icons.receipt_long_outlined,
-                              iconColor: const Color(0xFFDC2626),
-                              iconBg: const Color(0xFFFEE2E2),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: MiniStatCard(
-                              label: 'Remaining Cash',
-                              value: inr(totalCashPaise - d.expenseTotal),
-                              icon: Icons.account_balance_wallet_outlined,
-                              iconColor: isDark ? const Color(0xFF60A5FA) : const Color(0xFF0A2540),
-                              iconBg: const Color(0xFFDBEAFE),
-                            ),
-                          ),
-                        ],
+              if (_kind != null && _kind != 'expenses' && d.totals != null) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: MiniStatCard(
+                        label: 'Total cash collected',
+                        value: inr(d.totals!.cash),
+                        icon: Icons.payments_outlined,
+                        iconColor: const Color(0xFF10B981),
+                        iconBg: const Color(0xFFE8F8F0),
                       ),
-                    ],
-                  );
-                }),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: MiniStatCard(
+                        label: 'Gpay/NEFT/Others',
+                        value: inr(d.totals!.gpay + d.totals!.cheque),
+                        icon: Icons.account_balance_outlined,
+                        iconColor: const Color(0xFF3B82F6),
+                        iconBg: const Color(0xFFEFF6FF),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TotalCollectionCard(
+                  amount: inr(d.totals!.total),
+                  subtext: '${d.totals!.count} record${d.totals!.count == 1 ? '' : 's'} found',
+                ),
+              ] else if (_kind == 'expenses') ...[
+                const SizedBox(height: 12),
+                HeroStatCard(
+                  amount: inr(d.expenseTotal),
+                  title: 'Total expenses',
+                  icon: Icons.receipt_long_outlined,
+                  gradientColors: const [Color(0xFFDC2626), Color(0xFFEF4444)],
+                  subtext: '${d.report?.rows.length ?? 0} expense record${(d.report?.rows.length ?? 0) == 1 ? '' : 's'}',
+                ),
               ],
               const SizedBox(height: 12),
               GlassCard(
@@ -220,17 +210,33 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 cells: [
                                   for (var i = 0; i < r.length; i++)
                                     DataCell(
-                                      Text(
-                                        Report.cell(r[i]),
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700,
-                                          color: (_kind == 'date_range' && i == r.length - 1)
-                                              ? ((Report.cell(r[i]) == '-' || Report.cell(r[i]) == ' - ')
-                                                  ? const Color(0xFFEF4444)
-                                                  : const Color(0xFFDC2626))
-                                              : (isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A)),
-                                        ),
+                                      Builder(
+                                        builder: (context) {
+                                          final cellStr = Report.cell(r[i]);
+                                          final isDash = cellStr == '-' || cellStr == ' - ';
+                                          final isNotesCol = i < d.report!.headers.length && d.report!.headers[i] == 'Notes';
+                                          TextStyle style;
+                                          if (isNotesCol && !isDash) {
+                                            style = const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w800,
+                                              color: Color(0xFFDC2626),
+                                            );
+                                          } else if (isDash) {
+                                            style = TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w700,
+                                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                            );
+                                          } else {
+                                            style = TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w700,
+                                              color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                                            );
+                                          }
+                                          return Text(cellStr, style: style);
+                                        },
                                       ),
                                     ),
                                 ],
@@ -245,11 +251,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                       style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w900,
-                                        color: (_kind == 'date_range' && i >= 4 && i <= 6)
-                                            ? const Color(0xFF0D9488)
-                                            : (_kind == 'date_range' && i == d.report!.footer!.length - 1 && (Report.cell(d.report!.footer![i]) == '-' || Report.cell(d.report!.footer![i]) == ' - '))
-                                                ? const Color(0xFFEF4444)
-                                                : (isDark ? const Color(0xFF38BDF8) : AppColors.total),
+                                        color: (Report.cell(d.report!.footer![i]) == '-' || Report.cell(d.report!.footer![i]) == ' - ')
+                                            ? (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))
+                                            : (((_kind == 'date_range' || _kind == 'collection_notes') && i >= 4 && i <= 6)
+                                                ? const Color(0xFF0D9488)
+                                                : (isDark ? const Color(0xFF38BDF8) : AppColors.total)),
                                       ),
                                     )),
                                 ],

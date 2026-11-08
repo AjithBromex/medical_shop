@@ -54,10 +54,11 @@ class DashboardScreen extends StatelessWidget {
             SectionTitle(
               'Today — ${dayWithDmy(td)}',
               showBar: false,
+              padding: const EdgeInsets.only(top: 4, bottom: 12),
             ),
             const SizedBox(height: 12),
 
-            // 1. Hero Banner: Remaining Cash
+            // 1. Hero Card: Remaining cash (Current Balance)
             _HeroBalanceCard(
               amount: inr(d.t.cash - d.expToday),
               subtext: 'Cash (${inr(d.t.cash)}) − Expenses (${inr(d.expToday)})',
@@ -65,7 +66,15 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // 2. Row of 2: Cash collection & Gpay/NEFT/Others
+            // 2. Full Width Card: Total collection (Today - Emerald Green Gradient Card)
+            TotalCollectionCard(
+              amount: inr(d.t.total),
+              subtext: '${d.t.count} transaction${d.t.count == 1 ? '' : 's'}',
+              onTap: () => onGo(2),
+            ),
+            const SizedBox(height: 12),
+
+            // 3. 2x2 Grid: Row 1 - Cash collection & Gpay/NEFT/Others
             Row(
               children: [
                 Expanded(
@@ -74,7 +83,8 @@ class DashboardScreen extends StatelessWidget {
                     value: inr(d.t.cash),
                     icon: Icons.payments_outlined,
                     iconColor: const Color(0xFF10B981),
-                    iconBg: const Color(0xFFE8F5E9),
+                    iconBg: const Color(0xFFE8F8F0),
+                    onTap: () => onGo(5),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -85,21 +95,14 @@ class DashboardScreen extends StatelessWidget {
                     icon: Icons.account_balance_outlined,
                     iconColor: const Color(0xFF3B82F6),
                     iconBg: const Color(0xFFEFF6FF),
+                    onTap: () => onGo(5),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
 
-            // 3. Full Width: Total Collection (Vibrant Sky Blue Card)
-            WideStatCard.totalCollection(
-              value: inr(d.t.total),
-              sub: '${d.t.count} transaction${d.t.count == 1 ? '' : 's'}',
-              onTap: () => onGo(2),
-            ),
-            const SizedBox(height: 12),
-
-            // 4. Row of 2: Total expenses & Total remaining
+            // 4. 2x2 Grid: Row 2 - Total expenses & Total remaining
             Row(
               children: [
                 Expanded(
@@ -108,7 +111,7 @@ class DashboardScreen extends StatelessWidget {
                     value: inr(d.expToday),
                     icon: Icons.confirmation_number_outlined,
                     iconColor: const Color(0xFFF43F5E),
-                    iconBg: const Color(0xFFFFE4E6),
+                    iconBg: const Color(0xFFFFEEF2),
                     onTap: () => onGo(3),
                   ),
                 ),
@@ -120,20 +123,21 @@ class DashboardScreen extends StatelessWidget {
                     icon: Icons.savings_outlined,
                     iconColor: const Color(0xFF10B981),
                     iconBg: const Color(0xFFE8F5E9),
+                    onTap: () => onGo(5),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // 5. Section: All dates
-            const SectionTitle('All dates', showBar: false),
+            const SectionTitle('All dates', showBar: false, padding: EdgeInsets.only(top: 4, bottom: 12)),
             const SizedBox(height: 12),
 
-            // 6. Full Width: Total Collection (All dates - vibrant sky blue card matching Today)
-            WideStatCard.totalCollection(
-              value: inr(d.all.total),
-              sub: '${d.all.count} transaction${d.all.count == 1 ? '' : 's'}',
+            // 6. Full Width: Total Collection (All dates - Emerald Green Gradient Card)
+            TotalCollectionCard(
+              amount: inr(d.all.total),
+              subtext: '${d.all.count} transaction${d.all.count == 1 ? '' : 's'}',
               onTap: () => onGo(2),
             ),
             const SizedBox(height: 12),
@@ -147,7 +151,7 @@ class DashboardScreen extends StatelessWidget {
                     value: inr(d.expAll),
                     icon: Icons.confirmation_number_outlined,
                     iconColor: const Color(0xFFF43F5E),
-                    iconBg: const Color(0xFFFFE4E6),
+                    iconBg: const Color(0xFFFFEEF2),
                     onTap: () => onGo(3),
                   ),
                 ),
@@ -245,23 +249,23 @@ class _HeroBalanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(24),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF07558A), Color(0xFF0276B9)],
+              colors: [Color(0xFF025A94), Color(0xFF0284C7)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(24),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x3307558A),
+                color: Color(0x33025A94),
                 blurRadius: 18,
                 offset: Offset(0, 8),
               ),
@@ -270,20 +274,20 @@ class _HeroBalanceCard extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 62,
-                height: 62,
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.14),
+                  color: Colors.white.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.28),
+                    color: Colors.white.withValues(alpha: 0.30),
                     width: 1.2,
                   ),
                 ),
                 child: const Icon(
-                  Icons.account_balance_wallet_outlined,
+                  Icons.wallet_outlined,
                   color: Colors.white,
-                  size: 30,
+                  size: 28,
                 ),
               ),
               const SizedBox(width: 16),
@@ -300,20 +304,24 @@ class _HeroBalanceCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Text(
-                      amount,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        amount,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       subtext,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.75),
+                        color: Colors.white.withValues(alpha: 0.80),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -371,22 +379,25 @@ class _MiniStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(18),
+      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1E293B) : Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0), width: 1.2),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              width: 1.2,
+            ),
             boxShadow: [
               BoxShadow(
                 color: isDark ? const Color(0x33000000) : const Color(0x0A0F172A),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -398,7 +409,7 @@ class _MiniStatCard extends StatelessWidget {
                 height: 44,
                 decoration: BoxDecoration(
                   color: isDark ? iconBg.withValues(alpha: 0.18) : iconBg,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, color: iconColor, size: 22),
               ),
@@ -406,21 +417,25 @@ class _MiniStatCard extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
-                  letterSpacing: -0.4,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                    letterSpacing: -0.4,
+                  ),
                 ),
               ),
               if (sub != null) ...[

@@ -295,6 +295,156 @@ class HeroStatCard extends StatelessWidget {
   }
 }
 
+/// Signature Total Collection Card matching Home Page with 3 ascending glowing bars
+class TotalCollectionCard extends StatelessWidget {
+  final String amount;
+  final String subtext;
+  final VoidCallback? onTap;
+  final List<Color>? gradientColors;
+  final IconData icon;
+  final String title;
+
+  const TotalCollectionCard({
+    super.key,
+    required this.amount,
+    required this.subtext,
+    this.onTap,
+    this.gradientColors,
+    this.icon = Icons.monetization_on_outlined,
+    this.title = 'Total collection',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = gradientColors ??
+        const [
+          Color(0xFF007A78),
+          Color(0xFF009668),
+          Color(0xFF00B074),
+        ];
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: colors,
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: colors.first.withValues(alpha: 0.28),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.30),
+                    width: 1.2,
+                  ),
+                ),
+                child: Icon(icon, color: Colors.white, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        amount,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtext,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.82),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // 3-bar ascending glowing chart graphic
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.40),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Container(
+                      width: 7,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Container(
+                      width: 7,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.70),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// 2-Column Mini Stat Card matching Home Page
 class MiniStatCard extends StatelessWidget {
   final String label;
@@ -422,7 +572,7 @@ class WideStatCard extends StatelessWidget {
     this.isDark = false,
   });
 
-  /// Signature vibrant sky-blue gradient card matching the Home Page Total Collection
+  /// Signature emerald gradient card matching the Home Page Total Collection
   factory WideStatCard.totalCollection({
     Key? key,
     required String value,
@@ -430,21 +580,12 @@ class WideStatCard extends StatelessWidget {
     VoidCallback? onTap,
     String label = 'Total collection',
   }) {
-    return WideStatCard(
+    return _TotalCollectionWideCard(
       key: key,
-      label: label,
       value: value,
       sub: sub,
-      icon: Icons.monetization_on_outlined,
-      iconColor: Colors.white,
-      iconBg: Colors.white.withValues(alpha: 0.22),
-      gradient: const LinearGradient(
-        colors: [Color(0xFF0284C7), Color(0xFF0EA5E9)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      isDark: true,
       onTap: onTap,
+      label: label,
     );
   }
 
@@ -534,6 +675,30 @@ class WideStatCard extends StatelessWidget {
   }
 }
 
+class _TotalCollectionWideCard extends WideStatCard {
+  const _TotalCollectionWideCard({
+    super.key,
+    required super.value,
+    super.sub,
+    super.onTap,
+    super.label = 'Total collection',
+  }) : super(
+          icon: Icons.monetization_on_outlined,
+          iconColor: Colors.white,
+          iconBg: Colors.transparent,
+        );
+
+  @override
+  Widget build(BuildContext context) {
+    return TotalCollectionCard(
+      amount: value,
+      subtext: sub ?? '',
+      onTap: onTap,
+      title: label,
+    );
+  }
+}
+
 class StatCard extends StatelessWidget {
   final String label, value;
   final IconData icon;
@@ -598,10 +763,11 @@ class SectionTitle extends StatelessWidget {
   final String text;
   final Widget? trailing;
   final bool showBar;
-  const SectionTitle(this.text, {super.key, this.trailing, this.showBar = true});
+  final EdgeInsetsGeometry? padding;
+  const SectionTitle(this.text, {super.key, this.trailing, this.showBar = true, this.padding});
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 22, bottom: 12),
+        padding: padding ?? const EdgeInsets.only(top: 22, bottom: 12),
         child: Row(children: [
           if (showBar)
             Container(

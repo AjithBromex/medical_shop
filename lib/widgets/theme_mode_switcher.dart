@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../core/theme.dart';
 import '../state/app_state.dart';
 
 /// A versatile Light / Dark mode switcher supporting both:
@@ -32,8 +31,8 @@ class ThemeModeSwitcher extends StatelessWidget {
           child: Icon(
             isDark ? Icons.wb_sunny_rounded : Icons.nightlight_round,
             key: ValueKey(isDark),
-            size: 20,
-            color: isDark ? const Color(0xFFFBBF24) : AppColors.textPrimary,
+            size: 22,
+            color: isDark ? const Color(0xFFFBBF24) : const Color(0xFF0F172A),
           ),
         ),
         onPressed: () => state.toggleTheme(),

@@ -8,7 +8,6 @@ import '../data/models.dart';
 import '../data/repository.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
-import 'receipt_screen.dart';
 import 'shell.dart';
 
 /// Add (no [existing]) or edit a collection. Same validation rules as the Flask app.
@@ -85,17 +84,6 @@ class _CollectionFormState extends State<CollectionForm> {
       return parseAmount(c.text, 'x');
     } on FormatException {
       return 0;
-    }
-  }
-
-  void _goHome() {
-    final shell = context.findAncestorStateOfType<ShellState>();
-    if (shell != null) {
-      shell.go(0);
-    } else if (widget.onSaved != null) {
-      widget.onSaved!();
-    } else if (Navigator.canPop(context)) {
-      Navigator.pop(context);
     }
   }
 
@@ -198,34 +186,11 @@ class _CollectionFormState extends State<CollectionForm> {
         toast(context, 'Collection $receipt saved (${inr(c.total)}).');
         // ready for the next entry, same date kept
         _receipt.text = await repo.nextReceiptNumber();
-        _collected.clear(); _gpayCheque.clear(); _notes.clear();
+        _collected.clear();
+        _gpayCheque.clear();
+        _notes.clear();
         _shopSearch.clear();
         setState(() => _shopId = null);
-        if (mounted) {
-          final view = await showDialog<bool>(
-            context: context,
-            builder: (d) => AlertDialog(
-              title: const Text('Collection saved'),
-              content: Text('$receipt · ${inr(c.total)}\nDo you want to view / print the receipt?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(d, false),
-                  child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(d, true),
-                  child: const Text('View receipt'),
-                ),
-              ],
-            ),
-          );
-          if (view == true && mounted) {
-            await Navigator.push(context, MaterialPageRoute(builder: (_) => ReceiptScreen(collectionId: savedId)));
-          }
-          if (mounted) {
-            _goHome();
-          }
-        }
       }
     } on RuleException catch (e) {
       setState(() => _errors = [e.message]);
@@ -274,14 +239,10 @@ class _CollectionFormState extends State<CollectionForm> {
         ),
       ErrorBox(_errors),
 
-      // 1. Hero Total Card
-      HeroStatCard(
+      // 1. Total Collection Card
+      TotalCollectionCard(
         amount: inr(collected),
-        title: 'Total collection',
         subtext: 'Cash (auto): ${inr(cash)}  •  GPay / Cheque: ${inr(gpayCheque)}',
-        icon: Icons.monetization_on_outlined,
-        gradientColors: const [Color(0xFF0284C7), Color(0xFF0EA5E9)],
-        badgeText: 'LIVE\nTOTAL',
       ),
       const SizedBox(height: 16),
 

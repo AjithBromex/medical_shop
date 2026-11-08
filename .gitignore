@@ -4,6 +4,7 @@
 *.pyc
 *.swp
 .DS_Store
+Thumbs.db
 .atom/
 .build/
 .buildlog/
@@ -12,14 +13,12 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# IntelliJ & VS Code
 *.iml
 *.ipr
 *.iws
 .idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-#.vscode/
+.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -32,28 +31,48 @@ build/
 .gradle/
 /coverage/
 
-# Symbolication related
+# Symbolication & Obfuscation
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# Android Studio & Build Artifacts
 /android/app/debug
 /android/app/profile
 /android/app/release
+*.apk
+*.aab
 
-# Node / Server
+# Node & Dependencies
 **/node_modules/
+.pnp
+.pnp.js
 
-# Sensitive & Secret Files
+# Environment variables
 **/.env
 **/.env.*
 !**/.env.example
-*.key
+
+# Credentials, Keys & Certificates
+*serviceAccount*.json
+*service-account*.json
+*credentials*.json
 *.pem
+*.key
+*.p12
+*.pfx
 *.jks
 *.keystore
+local.properties
+key.properties
+
+# Local Database & Storage Files
 *.db
 *.sqlite
 *.sqlite3
+
+# Firebase & Cloud Credentials
+.firebase/
+firebase-debug.log
+firestore-debug.log
+google-services.json
+GoogleService-Info.plist
