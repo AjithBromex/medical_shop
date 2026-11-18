@@ -29,6 +29,7 @@ migrate_working_dir/
 .pub/
 build/
 .gradle/
+.kotlin/
 /coverage/
 
 # Symbolication & Obfuscation
