@@ -8,7 +8,6 @@ import '../data/models.dart';
 import '../data/repository.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
-import 'shell.dart';
 
 /// Add (no [existing]) or edit a collection. Same validation rules as the Flask app.
 class CollectionForm extends StatefulWidget {
@@ -175,7 +174,7 @@ class _CollectionFormState extends State<CollectionForm> {
         cheque: 0,
         notes: notes.isEmpty ? null : notes,
       );
-      final savedId = await repo.saveCollection(c);
+      await repo.saveCollection(c);
       if (!mounted) return;
       final state = context.read<AppState>();
       state.changed();

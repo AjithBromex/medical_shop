@@ -30,16 +30,6 @@ const _reportClockBadgeSvg = '''<svg viewBox="0 0 24 24" width="22" height="22">
   <polyline points="17 14.5 17 17 18.5 17" fill="none" stroke="#0284C7" stroke-width="1.5" stroke-linecap="round"/>
 </svg>''';
 
-
-const _reportExpenseCardSvg = '''<svg viewBox="0 0 28 28" width="28" height="28">
-  <path d="M6 3h16v22l-2.5-1.5L17 25l-3-1.5L11 25l-2.5-1.5L6 25V3z" fill="none" stroke="#DC2626" stroke-width="2" stroke-linejoin="round"/>
-  <rect x="9.5" y="7" width="9" height="7" rx="1.5" fill="none" stroke="#DC2626" stroke-width="1.6"/>
-  <line x1="14" y1="8.5" x2="14" y2="12.5" stroke="#DC2626" stroke-width="1.6" stroke-linecap="round"/>
-  <line x1="12" y1="10.5" x2="16" y2="10.5" stroke="#DC2626" stroke-width="1.6" stroke-linecap="round"/>
-  <line x1="10" y1="17" x2="18" y2="17" stroke="#DC2626" stroke-width="1.6" stroke-linecap="round"/>
-  <line x1="10" y1="20" x2="15" y2="20" stroke="#DC2626" stroke-width="1.6" stroke-linecap="round"/>
-</svg>''';
-
 const _reportWalletCardSvg = '''<svg viewBox="0 0 28 28" width="28" height="28">
   <path d="M4 8a3 3 0 0 1 3-3h15a2 2 0 0 1 2 2v2H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h15a2 2 0 0 0 2-2V11" fill="none" stroke="#0A2540" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M17 13h7v6h-7a3 3 0 0 1 0-6z" fill="none" stroke="#0A2540" stroke-width="2"/>
@@ -161,15 +151,6 @@ Future<pw.Document> buildReportPdfDocument(Report report, Filters f, {int? expen
           if (t is Money) totalCollectionPaise += t.paise;
         }
       }
-    }
-  }
-
-  int expensePaise = expenseTotal ?? 0;
-  if (expenseTotal == null && isDateRange) {
-    try {
-      expensePaise = await Repository.instance.expenseTotal(f.dateFrom, f.dateTo);
-    } catch (_) {
-      expensePaise = 0;
     }
   }
 

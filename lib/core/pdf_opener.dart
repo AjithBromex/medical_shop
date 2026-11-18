@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
@@ -16,6 +16,17 @@ Future<void> openPdfWithExternalViewer({
   String? title,
 }) async {
   try {
+    if (kIsWeb) {
+      await Share.shareXFiles(
+        [XFile.fromData(bytes, mimeType: 'application/pdf', name: filename)],
+        subject: title ?? filename,
+      );
+      if (context.mounted) {
+        toast(context, 'PDF ready: $filename');
+      }
+      return;
+    }
+
     // 1. Write bytes to temporary cache directory so OpenFilex can launch it via its FileProvider
     final tempDir = await getTemporaryDirectory();
     final tempFile = File('${tempDir.path}/$filename');

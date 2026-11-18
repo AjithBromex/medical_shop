@@ -900,7 +900,12 @@ class Report {
     if (v is DateTime) return dmy(v);
     if (v == null) return '';
     var t = v.toString();
-    if (csv && t.isNotEmpty && '=+-@\t\r'.contains(t[0])) t = "'$t";
+    if (csv && t.isNotEmpty) {
+      final trimmed = t.trimLeft();
+      if (trimmed.isNotEmpty && '=+-@|%\t\r'.contains(trimmed[0])) {
+        t = "'$t";
+      }
+    }
     return t;
   }
 }

@@ -119,6 +119,7 @@ CREATE TABLE IF NOT EXISTS sync_queue (
   attempts INTEGER NOT NULL DEFAULT 0,
   last_error TEXT
 )''');
+          await d.execute('CREATE INDEX IF NOT EXISTS ix_sync_queue_entity ON sync_queue(entity_type, entity_id)');
         }
 
         if (oldVersion < 3) {
@@ -228,6 +229,7 @@ CREATE TABLE sync_queue (
   attempts INTEGER NOT NULL DEFAULT 0,
   last_error TEXT
 )''');
+        await d.execute('CREATE INDEX IF NOT EXISTS ix_sync_queue_entity ON sync_queue(entity_type, entity_id)');
         final nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
         for (final c in defaultCategories) {
           await d.insert('expense_categories', {

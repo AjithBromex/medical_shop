@@ -9,6 +9,7 @@ import 'package:sqflite/sqflite.dart';
 import '../core/dates.dart';
 import '../core/theme.dart';
 import '../data/database.dart';
+import '../data/drive_sync_service.dart';
 import '../data/sync_queue.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
@@ -762,6 +763,8 @@ class _DataImportDialogState extends State<DataImportDialog> {
         } else {
           toast(context, 'Success! $totalCollections collections ($collectionsAdded new, $collectionsUpdated updated/restored) queued for Google Drive.');
         }
+
+        DriveSyncService.instance.scheduleDebouncedSync();
 
         Navigator.pop(context);
       }

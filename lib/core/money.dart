@@ -5,12 +5,13 @@ const int maxPaise = maxRupees * 100;
 /// Parses user input such as "1,250.50" into paise. Throws [FormatException] with a
 /// user-friendly message.
 int parseAmount(String? raw, String label, {bool allowZero = true}) {
-  final text = (raw ?? '').trim().replaceAll(',', '').replaceAll('₹', '').replaceAll(' ', '');
-  if (text.isEmpty) {
+  final rawText = (raw ?? '').trim().replaceAll(',', '').replaceAll('₹', '').replaceAll(' ', '');
+  if (rawText.isEmpty) {
     if (allowZero) return 0;
     throw FormatException('$label is required.');
   }
-  if (text.startsWith('-')) throw FormatException('$label cannot be negative.');
+  if (rawText.startsWith('-')) throw FormatException('$label cannot be negative.');
+  final text = rawText.startsWith('.') ? '0$rawText' : rawText;
   final match = RegExp(r'^(\d+)(?:\.(\d*))?$').firstMatch(text);
   if (match == null) throw FormatException('$label must be a valid number.');
   final whole = match.group(1)!;
