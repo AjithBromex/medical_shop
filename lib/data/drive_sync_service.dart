@@ -533,42 +533,7 @@ class DriveSyncService {
           'sync_status': 'synced',
         };
       } else {
-        // Multi-device collision check: verify whether local and remote represent the same logical expense
-        final localDate = local['expense_date'];
-        final remoteDate = r['expense_date'];
-        final localDesc = (local['description'] as String?)?.trim().toLowerCase();
-        final remoteDesc = (r['description'] as String?)?.trim().toLowerCase();
-        final localAmount = local['amount'];
-        final remoteAmount = r['amount'];
-
-        final isLikelySameExpense = (localDate == remoteDate) || (localDesc == remoteDesc && localAmount == remoteAmount);
-
-        if (!isLikelySameExpense) {
-          // Different expenses from different devices that shared the same autoincrement ID
-          // Preserve local expense AND insert remote expense as a new unique local record
-          final newId = await d.insert('expenses', {
-            'expense_date': r['expense_date'],
-            'category': r['category'] ?? 'Other',
-            'description': r['description'] ?? '',
-            'amount': r['amount'] ?? 0,
-            'notes': r['notes'] ?? '',
-            'sync_status': 'synced',
-            'deleted': (r['deleted'] as int?) ?? 0,
-            'updated_at_ms': remoteUpdatedAt,
-          });
-          final newDId = 'EXP-${newId.toString().padLeft(5, '0')}';
-          mergedExpenses[newDId] = {
-            ...r,
-            'id': newId,
-            'display_id': newDId,
-            'sync_status': 'synced',
-          };
-          mergedExpenses[dId] = {
-            ...local,
-            'display_id': dId,
-            'sync_status': 'synced',
-          };
-        } else if (remoteUpdatedAt > localUpdatedAt) {
+        if (remoteUpdatedAt > localUpdatedAt) {
           // Remote wins!
           await d.update(
             'expenses',
